@@ -1,0 +1,89 @@
+@page "/"
+@rendermode InteractiveServer
+
+@using MesWEB.Services
+@using Microsoft.JSInterop
+@inject DeviceDetectionService DeviceService
+@inject IJSRuntime JSRuntime
+
+<PageTitle>生産技術Ｇｒ</PageTitle>
+
+<style>
+    .home-container {
+        max-width: 700px;
+        margin: 40px auto;
+        background: #f8f9fa;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        padding: 2rem 2.5rem;
+    }
+    .home-title {
+        font-size: 2.2rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+        text-align: center;
+    }
+    .home-lead {
+        font-size: 1.1rem;
+        color: #007bff;
+        font-weight: 500;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+    .home-section {
+        margin-bottom: 1.2rem;
+        line-height: 1.7;
+        color: #333;
+    }
+    .home-highlight {
+        background: #e3f2fd;
+        border-left: 4px solid #007bff;
+        padding: 0.7rem 1rem;
+        margin: 1.2rem 0;
+        font-weight: 500;
+        color: #1565c0;
+        border-radius: 6px;
+    }
+    .device-info {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 6px;
+        padding: 0.7rem 1rem;
+        margin: 1rem 0;
+        font-size: 0.9rem;
+        color: #856404;
+    }
+</style>
+
+<div class="home-container">
+    <div class="home-title">生産技術Ｇｒ</div>
+    <div class="home-lead">DXで未来を切り拓く生産技術部門の挑戦</div>
+
+    <div class="home-section">
+        生産技術部門は、全社的なDX（デジタルトランスフォーメーション）推進の旗振り役となり、私たちの働き方、そして事業のあり方を根本から変革していくことを宣言します。
+    </div>
+
+    <div class="home-section">
+        私たちは、単に新しいツールを導入するだけではありません。デジタル技術を最大限に活用し、業務プロセスの抜本的な見直しと最適化を進めます。生産ラインの効率化はもちろん、研究開発、品質管理、さらにはバックオフィス業務に至るまで、あらゆる部門と連携し、全社の生産性向上を実現します。
+    </div>
+
+    <div class="home-highlight">
+        この取り組みは、私たち自身の成長の機会でもあります。新たなスキルを習得し、よりクリエイティブで付加価値の高い仕事に注力できる環境を整えていきます。
+    </div>
+
+    <div class="home-section">
+        DXの力で、より強く、より柔軟な組織へと進化し、未来を切り拓いていく。生産技術部門がその先頭に立ち、全社の変革を力強くリードします。
+    </div>
+</div>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await DeviceService.DetectDeviceAsync(JSRuntime);
+            StateHasChanged(); // UIを更新
+        }
+    }
+}

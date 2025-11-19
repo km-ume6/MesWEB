@@ -1,0 +1,3 @@
+# SQL Server接続情報を含む設定ファイルは Git管理外
+# パスワード等の機密情報が含まれるため
+**/appsettings.json

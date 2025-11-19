@@ -1,0 +1,83 @@
+﻿services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: crystalgrowth-sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourStrong!Passw0rd123
+      - MSSQL_PID=Developer
+      - MSSQL_ENCRYPT_CONNECTIONS=0
+      - MSSQL_TCP_PORT=1433
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql  # 永続化は Docker ボリュームにのみ行う
+      - type: bind
+        source: "D:/ForMount"
+        target: /host_d_for_mount
+        read_only: false
+    networks:
+      - crystalgrowth-network
+    restart: unless-stopped
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong!Passw0rd123 -Q "SELECT 1" -C || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+
+  crystalgrowthnotebook2:
+    build:
+      context: ./CrystalGrowthNotebook2
+      dockerfile: Dockerfile.simple
+    container_name: crystalgrowthnotebook2
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+    volumes:
+      - type: bind
+        # Host path: D:\ForMount (Windows). Use forward slashes or quoted Windows path.
+        source: "D:/ForMount"
+        target: /host_d_for_mount
+        read_only: false
+    networks:
+      - crystalgrowth-network
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    restart: unless-stopped
+
+  ftp:
+    image: fauria/vsftpd:latest
+    container_name: crystalgrowth-vsftpd
+    environment:
+      - FTP_USER=Logging
+      - FTP_PASS=Polling
+      # PASV_ADDRESS should be the Docker host's reachable IP for FTP clients.
+      # Using host.docker.internal works on Docker Desktop (Windows/Mac) to point to the host.
+      - PASV_ADDRESS=host.docker.internal
+      - PASV_MIN_PORT=21100
+      - PASV_MAX_PORT=21110
+      - LOG_STDOUT=true
+    ports:
+      - "21:21"
+      - "20:20"
+      - "21100-21110:21100-21110"
+    volumes:
+      - type: bind
+        source: "D:/ForMount/FTPRoot"
+        target: /home/vsftpd
+        read_only: false
+    networks:
+      - crystalgrowth-network
+    restart: unless-stopped
+
+networks:
+  crystalgrowth-network:
+    driver: bridge
+
+volumes:
+  sqlserver_data:
+    driver: local

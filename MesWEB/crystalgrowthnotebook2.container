@@ -1,0 +1,22 @@
+[Unit]
+Description=Crystal Growth Notebook 2 Container
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=localhost/crystalgrowthnotebook2:latest
+ContainerName=crystalgrowthnotebook2
+PublishPort=8080:8080
+
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=ASPNETCORE_URLS=http://+:8080
+Environment=ConnectionStrings__DefaultConnection=Data Source=/app/data/crystalgrowth.db
+
+Volume=crystalgrowth-data:/app/data
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target default.target

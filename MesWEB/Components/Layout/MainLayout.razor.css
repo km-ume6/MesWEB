@@ -1,0 +1,81 @@
+#blazor-error-ui {
+    color-scheme: light only;
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box;
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+    #blazor-error-ui .dismiss {
+        cursor: pointer;
+        position: absolute;
+        right: 0.75rem;
+        top: 0.5rem;
+    }
+
+/* New layout styles - light theme for better readability */
+.app-container {
+    display: flex;
+    min-height: 100vh;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+.nav-pane {
+    width: 240px;
+    background: #f3f4f6; /* gray-100 - light */
+    color: #111827; /* gray-900 - dark text for readability */
+    padding: 1rem;
+    box-sizing: border-box;
+    border-right: 1px solid #e5e7eb; /* subtle separator */
+}
+
+.nav-header {
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.nav-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.nav-link {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    color: #111827; /* inherit dark text */
+    text-decoration: none;
+    border-radius: 6px;
+}
+
+.nav-link.active,
+.nav-link:hover {
+    background: #eaf2ff; /* very light blue on hover/active */
+    color: #1e3a8a; /* darker blue text for emphasis */
+}
+
+.main-content {
+    flex: 1 1 auto;
+    padding: 1.5rem;
+    box-sizing: border-box;
+    background: #ffffff; /* white main content */
+}
+
+/* Responsive: collapse nav on small screens */
+@media (max-width: 640px) {
+    .nav-pane {
+        width: 100%;
+        position: relative;
+        border-right: none;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    .app-container {
+        flex-direction: column;
+    }
+}

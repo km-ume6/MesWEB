@@ -1,0 +1,18 @@
+# ランタイムステージのみ（ローカルビルド前提）
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+WORKDIR /app
+
+# 非root ユーザーで実行
+RUN useradd -m -u 1000 appuser && chown -R appuser /app
+USER appuser
+
+# ローカルでビルドした成果物をコピー
+COPY bin/Release/net9.0/publish .
+
+# 環境変数
+ENV ASPNETCORE_URLS=http://+:8080
+ENV ASPNETCORE_ENVIRONMENT=Production
+
+EXPOSE 8080
+
+ENTRYPOINT ["dotnet", "CrystalGrowthNotebook2.dll"]

@@ -1,0 +1,548 @@
+@page "/growth-note/add"
+@rendermode InteractiveServer
+
+@using MesWEB.Shared.Data
+@using MesWEB.Shared.Services
+@using System.Text.Json
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+@inject Microsoft.Extensions.Logging.ILogger<AddGrowthNote> Logger
+@inject DeviceDetectionService DeviceService
+
+<PageTitle>Add Record</PageTitle>
+
+<style>
+    /* 入力フィールドの配置設定 */
+    .form-control.text-input {
+        text-align: left !important;
+    }
+
+    .form-control.numeric-input {
+        text-align: right !important;
+    }
+
+    .form-control.date-input {
+        text-align: center !important;
+    }
+
+    /* ラベルの配置設定 */
+    .add-form-table td:first-child {
+        text-align: left !important;
+        vertical-align: middle;
+        font-weight: 600;
+        background-color: #f8f9fa;
+        width: 200px;
+    }
+
+    .add-form-table td:nth-child(3) {
+        text-align: left !important;
+        vertical-align: middle;
+        font-weight: 600;
+        background-color: #f8f9fa;
+        width: 200px;
+    }
+
+    .add-form-table {
+        width: 100%;
+        max-width: 1200px;
+    }
+</style>
+
+<h3>新規レコード</h3>
+
+<form @onsubmit="HandleSubmit" @onsubmit:preventDefault="true">
+    <div class="mb-3">
+        <button type="submit" class="btn btn-primary">保存</button>
+        <button type="button" class="btn btn-secondary ms-2" @onclick="Cancel">キャンセル</button>
+    </div>
+
+    <table class="table table-bordered add-form-table">
+        <tbody>
+            <tr>
+                <td><label>結晶育成日</label></td>
+                <td><input type="date" @bind="newItem.CrystalGrowthDate" class="form-control date-input" /></td>
+                <td><label>担当者</label></td>
+                <td>
+                    <input type="text" @bind="newItem.Operator" class="form-control text-input" list="operators" />
+                    <datalist id="operators">
+                        @foreach (var operatorName in existingOperators)
+                        {
+                            <option value="@operatorName">@operatorName</option>
+                        }
+                    </datalist>
+                </td>
+            </tr>
+            <tr>
+                <td><label>装置名</label></td>
+                <td>
+                    <input type="text" @bind="newItem.MachineName" class="form-control text-input" list="machines" />
+                    <datalist id="machines">
+                        @foreach (var machine in existingMachines)
+                        {
+                            <option value="@machine">@machine</option>
+                        }
+                    </datalist>
+                </td>
+                <td><label>添加元素</label></td>
+                <td>
+                    <input type="text" @bind="newItem.Dopants" class="form-control text-input" list="dopants" />
+                    <datalist id="dopants">
+                        @foreach (var dopant in existingDopants)
+                        {
+                            <option value="@dopant">@dopant</option>
+                        }
+                    </datalist>
+                </td>
+            </tr>
+            <tr>
+                <td><label>添加量</label></td>
+                <td><input type="number" step="0.01" @bind="newItem.DopantAmount" class="form-control numeric-input" /></td>
+                <td><label>添加濃度(ppm)</label></td>
+                <td><input type="number" @bind="newItem.ppm" class="form-control numeric-input" /></td>
+            </tr>
+            <tr>
+                <td><label>結晶ロット</label></td>
+                <td>
+                    <input type="text" @bind="newItem.CrystalLot" class="form-control text-input" list="crystallots" />
+                    <datalist id="crystallots">
+                        @foreach (var lot in existingCrystalLots)
+                        {
+                            <option value="@lot">@lot</option>
+                        }
+                    </datalist>
+                </td>
+                <td><label>ペレット投入量</label></td>
+                <td><input type="number" @bind="newItem.PelletFeed" class="form-control numeric-input" /></td>
+            </tr>
+            <tr>
+                <td><label>ペレットロット①</label></td>
+                <td>
+                    <input type="text" @bind="newItem.PelletLot1" class="form-control text-input" list="pelletlots" />
+                    <datalist id="pelletlots">
+                        @foreach (var lot in existingPelletLots)
+                        {
+                            <option value="@lot">@lot</option>
+                        }
+                    </datalist>
+                </td>
+                <td><label>ペレットロット②</label></td>
+                <td>
+                    <input type="text" @bind="newItem.PelletLot2" class="form-control text-input" list="pelletlots" />
+                </td>
+            </tr>
+            <tr>
+                <td><label>ペレットロット③</label></td>
+                <td>
+                    <input type="text" @bind="newItem.PelletLot3" class="form-control text-input" list="pelletlots" />
+                </td>
+                <td><label>カレット投入量</label></td>
+                <td><input type="number" @bind="newItem.CulletFeed" class="form-control numeric-input" /></td>
+            </tr>
+            <tr>
+                <td><label>カレットロット①</label></td>
+                <td>
+                    <input type="text" @bind="newItem.CulletLot1" class="form-control text-input" list="culletlots" />
+                    <datalist id="culletlots">
+                        @foreach (var lot in existingCulletLots)
+                        {
+                            <option value="@lot">@lot</option>
+                        }
+                    </datalist>
+                </td>
+                <td><label>カレットロット②</label></td>
+                <td>
+                    <input type="text" @bind="newItem.CulletLot2" class="form-control text-input" list="culletlots" />
+                </td>
+            </tr>
+            <tr>
+                <td><label>カレットロット③</label></td>
+                <td>
+                    <input type="text" @bind="newItem.CulletLot3" class="form-control text-input" list="culletlots" />
+                </td>
+                <td><label>坩堝番号</label></td>
+                <td>
+                    <input type="text" @bind="newItem.CrucibleName" class="form-control text-input" list="crucibles" />
+                    <datalist id="crucibles">
+                        @foreach (var crucible in existingCrucibles)
+                        {
+                            <option value="@crucible">@crucible</option>
+                        }
+                    </datalist>
+                </td>
+            </tr>
+            <tr>
+                <td><label>坩堝使用回数</label></td>
+                <td><input type="number" @bind="newItem.CrucibleCount" class="form-control numeric-input" /></td>
+                <td><label>引上げ時間（⊿ｔ）</label></td>
+                <td><input type="number" @bind="newItem.DeltaT" class="form-control numeric-input" /></td>
+            </tr>
+            <tr>
+                <td><label>坩堝内カオウール</label></td>
+                <td>
+                    <input type="text" @bind="newItem.InsideInsulationComposition" class="form-control text-input" list="insideinsulation" />
+                    <datalist id="insideinsulation">
+                        @foreach (var comp in existingInsideInsulation)
+                        {
+                            <option value="@comp">@comp</option>
+                        }
+                    </datalist>
+                </td>
+                <td><label>坩堝底カオウール</label></td>
+                <td>
+                    <input type="text" @bind="newItem.BottomInsulationComposition" class="form-control text-input" list="bottominsulation" />
+                    <datalist id="bottominsulation">
+                        @foreach (var comp in existingBottomInsulation)
+                        {
+                            <option value="@comp">@comp</option>
+                        }
+                    </datalist>
+                </td>
+            </tr>
+            <tr>
+                <td><label>炉組条件①</label></td>
+                <td style="display:flex;align-items:center;gap:8px;">
+                    <input type="text" @bind="newItem.FurnaceCondition1" class="form-control text-input" list="furnaceconditions" @ref="furnaceCondition1Input" />
+                    <select @onchange="OnFurnace1SymbolSelected" class="form-select" style="width:90px;">
+                        <option value="">記号</option>
+                        <option value="±">±</option>
+                        <option value=".">.</option>
+                        <option value="/">/</option>
+                    </select>
+                    <datalist id="furnaceconditions">
+                        @foreach (var condition in existingFurnaceConditions)
+                        {
+                            <option value="@condition">@condition</option>
+                        }
+                    </datalist>
+                </td>
+                <td><label>炉組条件②</label></td>
+                <td style="display:flex;align-items:center;gap:8px;">
+                    <input type="text" @bind="newItem.FurnaceCondition2" class="form-control text-input" list="furnaceconditions" @ref="furnaceCondition2Input" />
+                    <select @onchange="OnFurnace2SymbolSelected" class="form-select" style="width:90px;">
+                        <option value="">記号</option>
+                        <option value="±">±</option>
+                        <option value=".">.</option>
+                        <option value="/">/</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td><label>リング高さ</label></td>
+                <td style="display:flex;align-items:center;gap:8px;">
+                    <input type="text" @bind="newItem.RingHeightPosition" class="form-control text-input" list="ringpositions" @ref="ringHeightInput" />
+                    <select @onchange="OnSymbolSelected" class="form-select" style="width:90px;">
+                        <option value="">記号</option>
+                        <option value="±">±</option>
+                        <option value=".">.</option>
+                        <option value="/">/</option>
+                    </select>
+                    <datalist id="ringpositions">
+                        @foreach (var pos in existingRingPositions)
+                        {
+                            <option value="@pos">@pos</option>
+                        }
+                    </datalist>
+                </td>
+                <td><label>ジルコニア円板</label></td>
+                <td>
+                    <input type="text" @bind="newItem.UsingDisk" class="form-control text-input" list="disks" />
+                    <datalist id="disks">
+                        @foreach (var disk in existingDisks)
+                        {
+                            <option value="@disk">@disk</option>
+                        }
+                    </datalist>
+                </td>
+            </tr>
+            <tr>
+                <td><label>育成開始時刻 (HH:MM)</label></td>
+                <td style="display:flex;align-items:center;gap:8px;">
+                    <input type="text" @bind="growthStartTimeStr" class="form-control date-input" placeholder="12:34" @ref="growthStartTimeInput" />
+                    <button type="button" class="btn btn-outline-secondary" style="min-width:32px;padding:2px 8px;" @onclick="() => OnTimeColonClicked(growthStartTimeInput, v => growthStartTimeStr = v)">:</button>
+                </td>
+                <td><label>肩育成終了時刻 (HH:MM)</label></td>
+                <td style="display:flex;align-items:center;gap:8px;">
+                    <input type="text" @bind="shoulderEndTimeStr" class="form-control date-input" placeholder="12:34" @ref="shoulderEndTimeInput" />
+                    <button type="button" class="btn btn-outline-secondary" style="min-width:32px;padding:2px 8px;" @onclick="() => OnTimeColonClicked(shoulderEndTimeInput, v => shoulderEndTimeStr = v)">:</button>
+                </td>
+            </tr>
+            <tr>
+                <td><label>ネッキング時電源出力</label></td>
+                <td><input type="number" step="0.01" @bind="newItem.NeckingVoltage" class="form-control numeric-input" /></td>
+                <td><label>育成時電源出力</label></td>
+                <td><input type="number" step="0.01" @bind="newItem.GrowthVoltage" class="form-control numeric-input" /></td>
+            </tr>
+            <tr>
+                <td><label>シード位置</label></td>
+                <td><input type="number" step="0.01" @bind="newItem.SeedHeightPosition" class="form-control numeric-input" /></td>
+                <td><label>初期引上げ速度</label></td>
+                <td><input type="number" step="0.01" @bind="newItem.StartPullingSpeed" class="form-control numeric-input" /></td>
+            </tr>
+            <tr>
+                <td><label>肩育成引上げ速度</label></td>
+                <td><input type="number" step="0.01" @bind="newItem.ShoulderEndPullingSpeed" class="form-control numeric-input" /></td>
+                <td><label>直胴部引上げ速度</label></td>
+                <td><input type="number" step="0.01" @bind="newItem.LastPullingSpeed" class="form-control numeric-input" /></td>
+            </tr>
+            <tr>
+                <td><label>初期シード回転数</label></td>
+                <td><input type="number" step="0.01" @bind="newItem.FirstRotationalSpeed" class="form-control numeric-input" /></td>
+                <td><label>肩育シード成回転数</label></td>
+                <td><input type="number" step="0.01" @bind="newItem.ShoulderEndRotationalSpeed" class="form-control numeric-input" /></td>
+            </tr>
+            <tr>
+                <td><label>直胴部シード回転数</label></td>
+                <td><input type="number" step="0.01" @bind="newItem.LastRotationalSpeed" class="form-control numeric-input" /></td>
+                <td><label>ワークコイル重心位置</label></td>
+                <td style="display:flex;align-items:center;gap:8px;">
+                    <input type="text" @bind="newItem.GravityCenterWC" class="form-control text-input" list="gravitycenter" @ref="gravityCenterInput" />
+                    <select @onchange="OnGravitySymbolSelected" class="form-select" style="width:90px;">
+                        <option value="">記号</option>
+                        <option value="±">±</option>
+                        <option value=".">.</option>
+                        <option value="/">/</option>
+                        <option value="(">(</option>
+                        <option value=")">)</option>
+                    </select>
+                    <datalist id="gravitycenter">
+                        @foreach (var gc in existingGravityCenters)
+                        {
+                            <option value="@gc">@gc</option>
+                        }
+                    </datalist>
+                </td>
+            </tr>
+            <tr>
+                <td><label>育成時ワークコイル位置</label></td>
+                <td style="display:flex;align-items:center;gap:8px;">
+                    <input type="text" @bind="newItem.HeightPositionWC" class="form-control text-input" list="heightposition" @ref="heightPositionWCInput" />
+                    <select @onchange="OnHeightPositionSymbolSelected" class="form-select" style="width:90px;">
+                        <option value="">記号</option>
+                        <option value="±">±</option>
+                        <option value=".">.</option>
+                        <option value="/">/</option>
+                        <option value="(">(</option>
+                        <option value=")">)</option>
+                    </select>
+                    <datalist id="heightposition">
+                        @foreach (var hp in existingHeightPositions)
+                        {
+                            <option value="@hp">@hp</option>
+                        }
+                    </datalist>
+                </td>
+                <td><label>結晶ヘッド径</label></td>
+                <td><input type="number" @bind="newItem.HeadDiameter" class="form-control numeric-input" /></td>
+            </tr>
+            <tr>
+                <td><label>結晶テール径</label></td>
+                <td><input type="number" @bind="newItem.TailDiameter" class="form-control numeric-input" /></td>
+                <td><label>電源出力電圧</label></td>
+                <td><input type="number" @bind="newItem.OutputVoltage" class="form-control numeric-input" /></td>
+            </tr>
+            <tr>
+                <td><label>電源出力電流</label></td>
+                <td><input type="number" @bind="newItem.OutputCurrent" class="form-control numeric-input" /></td>
+                <td><label>液面高さ</label></td>
+                <td>
+                    <input type="text" @bind="newItem.LiquidLevel" class="form-control text-input" list="liquidlevels" />
+                    <datalist id="liquidlevels">
+                        @foreach (var level in existingLiquidLevels)
+                        {
+                            <option value="@level">@level</option>
+                        }
+                    </datalist>
+                </td>
+            </tr>
+            <tr>
+                <td><label>備考</label></td>
+                <td colspan="3"><textarea @bind="newItem.Remarks" class="form-control text-input" rows="3"></textarea></td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <div class="mb-3">
+        <button type="submit" class="btn btn-primary">保存</button>
+        <button type="button" class="btn btn-secondary ms-2" @onclick="Cancel">キャンセル</button>
+    </div>
+</form>
+
+@code {
+    private GrowthNoteItem newItem = new()
+    {
+        CrystalGrowthDate = DateTime.Today
+    };
+    private string? growthStartTimeStr;
+    private string? shoulderEndTimeStr;
+
+    // 既存データのリスト
+    private List<string> existingOperators = new();
+    private List<string> existingMachines = new();
+    private List<string> existingDopants = new();
+    private List<string> existingCrystalLots = new();
+    private List<string> existingPelletLots = new();
+    private List<string> existingCulletLots = new();
+    private List<string> existingCrucibles = new();
+    private List<string> existingInsideInsulation = new();
+    private List<string> existingBottomInsulation = new();
+    private List<string> existingFurnaceConditions = new();
+    private List<string> existingRingPositions = new();
+    private List<string> existingDisks = new();
+    private List<string> existingGravityCenters = new();
+    private List<string> existingHeightPositions = new();
+    private List<string> existingLiquidLevels = new();
+
+    private ElementReference ringHeightInput;
+    private ElementReference gravityCenterInput;
+    private ElementReference furnaceCondition1Input;
+    private ElementReference furnaceCondition2Input;
+    private ElementReference heightPositionWCInput;
+    private ElementReference growthStartTimeInput;
+    private ElementReference shoulderEndTimeInput;
+
+    private Task OnFurnace1SymbolSelected(ChangeEventArgs e)
+        => InsertSymbol(furnaceCondition1Input, v => newItem.FurnaceCondition1 = v, e);
+
+    private Task OnFurnace2SymbolSelected(ChangeEventArgs e)
+        => InsertSymbol(furnaceCondition2Input, v => newItem.FurnaceCondition2 = v, e);
+
+    private Task OnHeightPositionSymbolSelected(ChangeEventArgs e)
+        => InsertSymbol(heightPositionWCInput, v => newItem.HeightPositionWC = v, e);
+
+    private Task OnTimeColonClicked(ElementReference inputRef, Action<string> setValue)
+        => InsertSymbol(inputRef, setValue, new ChangeEventArgs { Value = ":" });
+
+    private Task OnSymbolSelected(ChangeEventArgs e)
+        => InsertSymbol(ringHeightInput, v => newItem.RingHeightPosition = v, e);
+
+    private Task OnGravitySymbolSelected(ChangeEventArgs e)
+        => InsertSymbol(gravityCenterInput, v => newItem.GravityCenterWC = v, e);
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    private async Task InsertSymbol(ElementReference inputRef, Action<string> setValue, ChangeEventArgs e)
+    {
+        var symbol = e.Value?.ToString();
+        if (!string.IsNullOrEmpty(symbol))
+        {
+            await JS.InvokeVoidAsync("insertAtCursorAndFocus", inputRef, symbol);
+            var value = await JS.InvokeAsync<string>("getInputValue", inputRef);
+            setValue(value);
+            StateHasChanged();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadExistingData();
+    }
+
+    private async Task LoadExistingData()
+    {
+        using var db = DbFactory.CreateDbContext();
+
+        var allNotes = await db.GrowthNotes.ToListAsync();
+
+        existingOperators = allNotes.Where(n => !string.IsNullOrWhiteSpace(n.Operator))
+            .Select(n => n.Operator!).Distinct().OrderBy(x => x).ToList();
+
+        existingMachines = allNotes.Where(n => !string.IsNullOrWhiteSpace(n.MachineName))
+            .Select(n => n.MachineName!).Distinct().OrderBy(x => x).ToList();
+
+        existingDopants = allNotes.Where(n => !string.IsNullOrWhiteSpace(n.Dopants))
+            .Select(n => n.Dopants!).Distinct().OrderBy(x => x).ToList();
+
+        existingCrystalLots = allNotes.Where(n => !string.IsNullOrWhiteSpace(n.CrystalLot))
+            .Select(n => n.CrystalLot!).Distinct().OrderBy(x => x).ToList();
+
+        existingPelletLots = allNotes.SelectMany(n => new[] { n.PelletLot1, n.PelletLot2, n.PelletLot3 })
+            .Where(lot => !string.IsNullOrWhiteSpace(lot)).Select(lot => lot!).Distinct().OrderBy(x => x).ToList();
+
+        existingCulletLots = allNotes.SelectMany(n => new[] { n.CulletLot1, n.CulletLot2, n.CulletLot3 })
+            .Where(lot => !string.IsNullOrWhiteSpace(lot)).Select(lot => lot!).Distinct().OrderBy(x => x).ToList();
+
+        existingCrucibles = allNotes.Where(n => !string.IsNullOrWhiteSpace(n.CrucibleName))
+            .Select(n => n.CrucibleName!).Distinct().OrderBy(x => x).ToList();
+
+        existingInsideInsulation = allNotes.Where(n => !string.IsNullOrWhiteSpace(n.InsideInsulationComposition))
+            .Select(n => n.InsideInsulationComposition!).Distinct().OrderBy(x => x).ToList();
+
+        existingBottomInsulation = allNotes.Where(n => !string.IsNullOrWhiteSpace(n.BottomInsulationComposition))
+            .Select(n => n.BottomInsulationComposition!).Distinct().OrderBy(x => x).ToList();
+
+        existingFurnaceConditions = allNotes.SelectMany(n => new[] { n.FurnaceCondition1, n.FurnaceCondition2 })
+            .Where(cond => !string.IsNullOrWhiteSpace(cond)).Select(cond => cond!).Distinct().OrderBy(x => x).ToList();
+
+        existingRingPositions = allNotes.Where(n => !string.IsNullOrWhiteSpace(n.RingHeightPosition))
+            .Select(n => n.RingHeightPosition!).Distinct().OrderBy(x => x).ToList();
+
+        existingDisks = allNotes.Where(n => !string.IsNullOrWhiteSpace(n.UsingDisk))
+            .Select(n => n.UsingDisk!).Distinct().OrderBy(x => x).ToList();
+
+        existingGravityCenters = allNotes.Where(n => !string.IsNullOrWhiteSpace(n.GravityCenterWC))
+            .Select(n => n.GravityCenterWC!).Distinct().OrderBy(x => x).ToList();
+
+        existingHeightPositions = allNotes.Where(n => !string.IsNullOrWhiteSpace(n.HeightPositionWC))
+            .Select(n => n.HeightPositionWC!).Distinct().OrderBy(x => x).ToList();
+
+        existingLiquidLevels = allNotes.Where(n => !string.IsNullOrWhiteSpace(n.LiquidLevel))
+            .Select(n => n.LiquidLevel!).Distinct().OrderBy(x => x).ToList();
+    }
+
+    private async Task HandleSubmit()
+    {
+        // HH:MM形式で時間を解析（秒は00で固定）
+        if (!string.IsNullOrWhiteSpace(growthStartTimeStr))
+        {
+            if (TimeSpan.TryParseExact(growthStartTimeStr, @"hh\:mm", null, out var gts))
+            {
+                newItem.GrowthStartTime = gts;
+            }
+            else if (TimeSpan.TryParseExact(growthStartTimeStr, @"h\:mm", null, out var gts2))
+            {
+                newItem.GrowthStartTime = gts2;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(shoulderEndTimeStr))
+        {
+            if (TimeSpan.TryParseExact(shoulderEndTimeStr, @"hh\:mm", null, out var sets))
+            {
+                newItem.ShoulderEndTime = sets;
+            }
+            else if (TimeSpan.TryParseExact(shoulderEndTimeStr, @"h\:mm", null, out var sets2))
+            {
+                newItem.ShoulderEndTime = sets2;
+            }
+        }
+
+        newItem.CreatedAt = DateTime.UtcNow;
+        try
+        {
+            Logger.LogInformation("Saving GrowthNote: {item}", JsonSerializer.Serialize(newItem));
+        }
+        catch { }
+
+        using (var db = DbFactory.CreateDbContext())
+        {
+            db.GrowthNotes.Add(newItem);
+            await db.SaveChangesAsync();
+
+            // read back saved entity from DB for verification
+            try
+            {
+                var saved = await db.GrowthNotes.AsNoTracking().FirstOrDefaultAsync(n => n.CGNoteId == newItem.CGNoteId);
+                Logger.LogInformation("Saved from DB: {item}", JsonSerializer.Serialize(saved));
+            }
+            catch { }
+        }
+
+        Navigation.NavigateTo("/growth-note");
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/growth-note");
+    }
+}

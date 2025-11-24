@@ -1,0 +1,693 @@
+@page "/excel-compare"
+@rendermode InteractiveServer
+
+@using ClosedXML.Excel
+@using MesWEB.Shared.Models
+@using MesWEB.Shared.Data
+@using Microsoft.EntityFrameworkCore
+@using System.Data
+@using ExcelDataReader
+@using static MesWEB.Shared.Models.FormulaType
+
+<PageTitle>Excel シート比較</PageTitle>
+
+<style>
+    .comparison-result {
+        margin-top: 2rem;
+    }
+
+    .result-match {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .result-mismatch {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    .mapping-section {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .template-section {
+        background-color: #e7f3ff;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .file-list {
+        background-color: #fff3cd;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .mapping-row {
+        background-color: white;
+        padding: 0.75rem;
+        border-radius: 0.375rem;
+        border: 1px solid #dee2e6;
+        margin-bottom: 0.5rem;
+    }
+
+    .file-name-input {
+        border-left: 3px solid #0d6efd;
+    }
+
+    /* ヘルプモーダル用スタイル */
+    .help-modal {
+        display: none;
+        position: fixed;
+        z-index: 1050;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4);
+    }
+
+        .help-modal.show {
+            display: block;
+        }
+
+    .help-modal-content {
+        background-color: #fefefe;
+        margin: 5% auto;
+        padding: 0;
+        border: 1px solid #888;
+        border-radius: 0.5rem;
+        width: 90%;
+        max-width: 800px;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    .help-modal-header {
+        padding: 1rem 1.5rem;
+        background-color: #0d6efd;
+        color: white;
+        border-radius: 0.5rem 0.5rem 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .help-modal-body {
+        padding: 1.5rem;
+    }
+
+    .help-close {
+        color: white;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        background: none;
+        border: none;
+        padding: 0;
+        line-height: 1;
+    }
+
+        .help-close:hover,
+        .help-close:focus {
+            color: #ddd;
+        }
+
+    .help-section {
+        margin-bottom: 1.5rem;
+    }
+
+        .help-section h5 {
+            color: #0d6efd;
+            margin-bottom: 0.75rem;
+            border-bottom: 2px solid #0d6efd;
+            padding-bottom: 0.5rem;
+        }
+
+        .help-section ul {
+            margin-left: 1.5rem;
+        }
+
+        .help-section li {
+            margin-bottom: 0.5rem;
+        }
+
+    .help-example {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.25rem;
+        margin-top: 0.5rem;
+        border-left: 3px solid #0d6efd;
+    }
+
+    .help-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        margin-right: 0.5rem;
+        background-color: #0d6efd;
+        color: white;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+    }
+</style>
+
+<h3>
+    Excelシート比較ツール（ファイル名ベース）
+    <button type="button" class="btn btn-outline-primary btn-sm ms-3" @onclick="ShowHelp">
+        <i class="fas fa-question-circle"></i> 使い方
+    </button>
+</h3>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">使い方</h5>
+        <ol>
+            <li><strong>テンプレートを先に読み込めます</strong> - ファイルアップロード前でもOK</li>
+            <li>複数のExcelファイルをアップロードします（最大5ファイル、複数回可）</li>
+            <li>セル対応表でファイル名、シート名、セルアドレスを指定します</li>
+            <li>数値比較時の小数点桁数と許容誤差を設定できます</li>
+            <li>「比較実行」ボタンをクリックします</li>
+        </ol>
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> <strong>テンプレートはファイル名とシート名で保存されます。</strong><br />
+            ブックのアップロード順序に関係なく、同じファイル名があれば自動的に割り当てられます。
+        </div>
+    </div>
+</div>
+
+<!-- テンプレート管理 -->
+<div class="template-section">
+    <h4>テンプレート管理</h4>
+
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <label class="form-label">保存されたテンプレート</label>
+            <select @bind="selectedTemplateId" class="form-select">
+                <option value="0">-- テンプレートを選択 --</option>
+                @foreach (var template in savedTemplates)
+                {
+                    <option value="@template.TemplateId">@template.TemplateName</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-8 d-flex align-items-end gap-2">
+            <button type="button" class="btn btn-primary" @onclick="LoadTemplate" disabled="@(selectedTemplateId == 0)">
+                <i class="fas fa-folder-open"></i> 読み込み
+            </button>
+            <button type="button" class="btn btn-danger" @onclick="DeleteTemplate" disabled="@(selectedTemplateId == 0)">
+                <i class="fas fa-trash"></i> 削除
+            </button>
+        </div>
+    </div>
+
+    <div class="row mb-2">
+        <div class="col-md-4">
+            <input type="text" @bind="newTemplateName" class="form-control" placeholder="新しいテンプレート名" />
+        </div>
+        <div class="col-md-6">
+            <input type="text" @bind="newTemplateDescription" class="form-control" placeholder="説明（任意）" />
+        </div>
+        <div class="col-md-2">
+            <button type="button" class="btn btn-success" @onclick="SaveTemplate" disabled="@(cellMappings.Count == 0)">
+                <i class="fas fa-save"></i> @(string.IsNullOrWhiteSpace(newTemplateName) && selectedTemplateId > 0 ? "上書き" : "保存")
+            </button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(templateMessage))
+    {
+        <div class="alert alert-info mt-2">@templateMessage</div>
+    }
+</div>
+
+<!-- ファイルアップロード -->
+<div class="mb-3">
+    <label for="fileUpload" class="form-label">Excelファイルを選択（複数可、複数回アップロード可）</label>
+    <InputFile id="fileUpload" OnChange="HandleFileUpload" class="form-control" accept=".xlsx,.xls" multiple />
+    <small class="form-text text-muted">最大5ファイルまで、各10MB。複数回に分けてアップロード可能</small>
+</div>
+
+@if (uploadedBooks.Any())
+{
+    <div class="file-list">
+        <h5>アップロード済みファイル (@uploadedBooks.Count /5)</h5>
+        <ul>
+            @foreach (var book in uploadedBooks)
+            {
+                <li>
+                    <strong>@book.FileName</strong>
+                    <small class="text-muted">(@book.Workbook.Worksheets.Count シート)</small>
+                    <button type="button" class="btn btn-sm btn-outline-danger ms-2" @onclick="() => RemoveUploadedFile(book.FileName)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </li>
+            }
+        </ul>
+        <button type="button" class="btn btn-warning btn-sm" @onclick="ClearUploadedFiles">
+            <i class="fas fa-times"></i> 全てクリア
+        </button>
+    </div>
+}
+
+<!-- セル対応表の設定 -->
+<div class="mapping-section">
+    <h4>セル対応表の設定</h4>
+
+    @for (int i = 0; i < cellMappings.Count; i++)
+    {
+        var index = i;
+        <div class="mapping-row">
+            <div class="row g-2 align-items-center mb-2">
+                <div class="col-12">
+                    <label class="form-label fw-bold mb-1">項目名</label>
+                    <input type="text" @bind="cellMappings[index].ItemName" class="form-control" placeholder="例: 結晶育成日" />
+                </div>
+            </div>
+
+            <div class="row g-2 align-items-center">
+                <!-- ブック1 -->
+                <div class="col-md-6">
+                    <div class="border-start border-primary border-3 ps-2">
+                        <label class="form-label mb-1 text-primary"><strong>ブック1</strong></label>
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <label class="form-label small mb-1">ファイル名（手入力またはドロップダウンから選択）</label>
+                                <input type="text"
+                                       @bind="cellMappings[index].Book1FileName"
+                                       @bind:after="() => UpdateBookIndexFromFileName(index,1)"
+                                       class="form-control form-control-sm file-name-input mb-2"
+                                       placeholder="例: 報告書_A.xlsx"
+                                       list="@($"book-list-{index}-1")" />
+                                <datalist id="@($"book-list-{index}-1")">
+                                    @foreach (var book in uploadedBooks)
+                                    {
+                                        <option value="@book.FileName">@book.FileName</option>
+                                    }
+                                </datalist>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small mb-1">シートを選択</label>
+                                <select @bind="cellMappings[index].Sheet1Name"
+                                        class="form-select form-select-sm"
+                                        disabled="@(cellMappings[index].Book1Index < 0)">
+                                    <option value="">-- シートを選択 --</option>
+                                    @if (cellMappings[index].Book1Index >= 0 && cellMappings[index].Book1Index < uploadedBooks.Count)
+                                    {
+                                        @foreach (var sheet in uploadedBooks[cellMappings[index].Book1Index].Workbook.Worksheets)
+                                        {
+                                            <option value="@sheet.Name">@sheet.Name</option>
+                                        }
+                                    }
+                                </select>
+                                @if (cellMappings[index].Book1Index < 0 && !string.IsNullOrEmpty(cellMappings[index].Book1FileName))
+                                {
+                                    <small class="text-warning">? ファイル「@cellMappings[index].Book1FileName」が見つかりません</small>
+                                }
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small mb-1">セルアドレスまたは範囲</label>
+                                <input type="text" @bind="cellMappings[index].Sheet1Cell"
+                                       class="form-control form-control-sm"
+                                       placeholder="例: A1 または A1:A10" />
+                                <small class="text-muted">範囲の場合、数式を選択してください</small>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small mb-1">数式</label>
+                                <select @bind="cellMappings[index].Sheet1Formula" class="form-select form-select-sm">
+                                    <option value="@FormulaType.None">なし（セル値）</option>
+                                    <option value="@FormulaType.Max">最大値（MAX）</option>
+                                    <option value="@FormulaType.Min">最小値（MIN）</option>
+                                    <option value="@FormulaType.Average">平均値（AVERAGE）</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ブック2 -->
+                <div class="col-md-6">
+                    <div class="border-start border-success border-3 ps-2">
+                        <label class="form-label mb-1 text-success"><strong>ブック2</strong></label>
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <label class="form-label small mb-1">ファイル名（手入力またはドロップダウンから選択）</label>
+                                <input type="text"
+                                       @bind="cellMappings[index].Book2FileName"
+                                       @bind:after="() => UpdateBookIndexFromFileName(index,2)"
+                                       class="form-control form-control-sm file-name-input mb-2"
+                                       placeholder="例: 報告書_B.xlsx"
+                                       list="@($"book-list-{index}-2")" />
+                                <datalist id="@($"book-list-{index}-2")">
+                                    @foreach (var book in uploadedBooks)
+                                    {
+                                        <option value="@book.FileName">@book.FileName</option>
+                                    }
+                                </datalist>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small mb-1">シートを選択</label>
+                                <select @bind="cellMappings[index].Sheet2Name"
+                                        class="form-select form-select-sm"
+                                        disabled="@(cellMappings[index].Book2Index < 0)">
+                                    <option value="">-- シートを選択 --</option>
+                                    @if (cellMappings[index].Book2Index >= 0 && cellMappings[index].Book2Index < uploadedBooks.Count)
+                                    {
+                                        @foreach (var sheet in uploadedBooks[cellMappings[index].Book2Index].Workbook.Worksheets)
+                                        {
+                                            <option value="@sheet.Name">@sheet.Name</option>
+                                        }
+                                    }
+                                </select>
+                                @if (cellMappings[index].Book2Index < 0 && !string.IsNullOrEmpty(cellMappings[index].Book2FileName))
+                                {
+                                    <small class="text-warning">? ファイル「@cellMappings[index].Book2FileName」が見つかりません</small>
+                                }
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small mb-1">セルアドレスまたは範囲</label>
+                                <input type="text" @bind="cellMappings[index].Sheet2Cell"
+                                       class="form-control form-control-sm"
+                                       placeholder="例: B5 または B1:B10" />
+                                <small class="text-muted">範囲の場合、数式を選択してください</small>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small mb-1">数式</label>
+                                <select @bind="cellMappings[index].Sheet2Formula" class="form-select form-select-sm">
+                                    <option value="@FormulaType.None">なし（セル値）</option>
+                                    <option value="@FormulaType.Max">最大値（MAX）</option>
+                                    <option value="@FormulaType.Min">最小値（MIN）</option>
+                                    <option value="@FormulaType.Average">平均値（AVERAGE）</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数値比較設定 -->
+            <div class="row g-2 mt-2">
+                <div class="col-md-6">
+                    <div class="border-start border-warning border-3 ps-2">
+                        <label class="form-label small mb-1 text-warning"><strong>数値比較設定</strong></label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label small mb-1">小数点以下桁数</label>
+                                <input type="number" @bind="cellMappings[index].DecimalPlaces"
+                                       class="form-control form-control-sm"
+                                       min="0" max="10" />
+                                <small class="text-muted">0～10桁</small>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small mb-1">許容誤差（±）</label>
+                                <input type="number" @bind="cellMappings[index].Tolerance"
+                                       class="form-control form-control-sm"
+                                       step="0.0001" min="0" />
+                                <small class="text-muted">例: 0.01</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-2">
+                <div class="col-12 text-end">
+                    <button type="button" class="btn btn-danger btn-sm" @onclick="() => RemoveMapping(index)">
+                        <i class="fas fa-trash"></i> この項目を削除
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="d-flex gap-2 mt-3">
+        <button type="button" class="btn btn-success" @onclick="AddMapping">
+            <i class="fas fa-plus"></i> 対応セルを追加
+        </button>
+        <button type="button" class="btn btn-secondary" @onclick="ClearMappings">
+            <i class="fas fa-eraser"></i>クリア
+        </button>
+        <button type="button" class="btn btn-primary" @onclick="CompareFiles" disabled="@(!CanCompare())">
+            <i class="fas fa-search"></i> 比較実行
+        </button>
+    </div>
+</div>
+
+@if (isLoading)
+{
+    <div class="alert alert-info">
+        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        処理中...
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">
+        <strong>エラー:</strong> @errorMessage
+    </div>
+}
+
+<!-- 比較結果 -->
+@if (comparisonResults != null && comparisonResults.Any())
+{
+    <div class="comparison-result">
+        <h4>比較結果</h4>
+
+        <div class="mb-3">
+            <span class="badge bg-success">一致: @comparisonResults.Count(r => r.IsMatch)</span>
+            <span class="badge bg-danger ms-2">不一致: @comparisonResults.Count(r => !r.IsMatch)</span>
+            <button type="button" class="btn btn-success btn-sm ms-3" @onclick="DownloadCsv">
+                <i class="fas fa-download"></i> CSV ダウンロード
+            </button>
+        </div>
+
+        <table class="table table-bordered table-sm">
+            <thead>
+                <tr>
+                    <th>項目名</th>
+                    <th>ブック1</th>
+                    <th>セル1</th>
+                    <th>数式1</th>
+                    <th>値1</th>
+                    <th>ブック2</th>
+                    <th>セル2</th>
+                    <th>数式2</th>
+                    <th>値2</th>
+                    <th>結果</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var result in comparisonResults)
+                {
+                    <tr class="@(result.IsMatch ? "result-match" : "result-mismatch")">
+                        <td>@result.ItemName</td>
+                        <td><small>@result.Book1Name</small></td>
+                        <td>@result.Sheet1Cell</td>
+                        <td><small>@result.Sheet1Formula</small></td>
+                        <td>@result.Sheet1Value</td>
+                        <td><small>@result.Book2Name</small></td>
+                        <td>@result.Sheet2Cell</td>
+                        <td><small>@result.Sheet2Formula</small></td>
+                        <td>@result.Sheet2Value</td>
+                        <td>
+                            @if (result.IsMatch)
+                            {
+                                <i class="fas fa-check-circle text-success"></i>
+                                <text> 一致</text>
+                            }
+                            else
+                            {
+                                <i class="fas fa-times-circle text-danger"></i>
+                                <text> 不一致</text>
+                            }
+                            @if (!string.IsNullOrEmpty(result.Message))
+                            {
+                                <br />
+                                <small>@result.Message</small>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<!-- ヘルプモーダル -->
+<div class="help-modal @(showHelp ? "show" : "")" @onclick="HideHelp">
+    <div class="help-modal-content" @onclick:stopPropagation="true">
+        <div class="help-modal-header">
+            <h4 class="mb-0">Excel シート比較ツール - 使い方ガイド</h4>
+            <button type="button" class="help-close" @onclick="HideHelp">&times;</button>
+        </div>
+        <div class="help-modal-body">
+            <div class="help-section">
+                <h5><i class="fas fa-file-excel"></i> 基本的な使い方</h5>
+                <ol>
+                    <li>
+                        <strong>Excelファイルをアップロード</strong>
+                        <ul>
+                            <li>最大5ファイルまで（各10MB以内）</li>
+                            <li>.xlsx と .xls 形式に対応</li>
+                            <li>複数回に分けてアップロード可能</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>セル対応表を設定</strong>
+                        <ul>
+                            <li>比較したい項目ごとに、ファイル名・シート名・セルアドレスを指定</li>
+                            <li>ファイル名は手入力またはドロップダウンから選択</li>
+                            <li>数値比較時は小数点桁数と許容誤差を設定可能</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>比較実行</strong>
+                        <ul>
+                            <li>「比較実行」ボタンをクリック</li>
+                            <li>結果が表に表示されます（一致/不一致）</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+
+            <div class="help-section">
+                <h5><i class="fas fa-calculator"></i> 数式機能の使い方</h5>
+                <p>セル範囲に対して計算を適用できます：</p>
+                <ul>
+                    <li><span class="help-badge">なし</span>単一セルの値をそのまま比較</li>
+                    <li><span class="help-badge">MAX</span>範囲内の最大値を計算</li>
+                    <li><span class="help-badge">MIN</span>範囲内の最小値を計算</li>
+                    <li><span class="help-badge">AVERAGE</span>範囲内の平均値を計算</li>
+                </ul>
+                <div class="help-example">
+                    <strong>例：</strong><br />
+                    <strong>セルアドレス:</strong> A1:A10<br />
+                    <strong>数式:</strong> 最大値（MAX）<br />
+                    → A1～A10の範囲で最大値を計算して比較
+                </div>
+            </div>
+
+            <div class="help-section">
+                <h5><i class="fas fa-sliders-h"></i> 数値比較設定</h5>
+                <p>数値を比較する際の精度を設定できます：</p>
+                <ul>
+                    <li><strong>小数点以下桁数:</strong> 表示・比較する小数点桁数（0～10桁）</li>
+                    <li><strong>許容誤差（±）:</strong> この範囲内なら一致とみなす（例: 0.01なら±0.01の誤差を許容）</li>
+                </ul>
+                <div class="help-example">
+                    <strong>例：</strong><br />
+                    <strong>小数点桁数:</strong> 2<br />
+                    <strong>許容誤差:</strong> 0.01<br />
+                    → 値1: 1.234 → 1.23<br />
+                    → 値2: 1.244 → 1.24<br />
+                    → 差: 0.01 ≦ 許容誤差 → 一致
+                </div>
+            </div>
+
+            <div class="help-section">
+      <h5><i class="fas fa-save"></i> テンプレート機能</h5>
+          <p>よく使う比較設定を保存・再利用できます：</p>
+
+       <div class="alert alert-info mb-3">
+ <strong><i class="fas fa-info-circle"></i> 「保存」ボタンの動作について：</strong>
+     <ul class="mb-0 mt-2">
+   <li><strong>テンプレート未選択の場合：</strong>ボタン表示は「保存」→ <strong>新規保存</strong>されます</li>
+      <li><strong>テンプレート選択中の場合：</strong>ボタン表示は「上書き」→ <strong>既存テンプレートを上書き</strong>します</li>
+             </ul>
+      <p class="mt-2 mb-0">
+          <small class="text-muted">
+         ※ ボタンの表示が自動的に切り替わるので、現在の動作モードを確認できます。<br />
+        ※ 新規保存したい場合は、テンプレート選択を解除（「-- テンプレートを選択 --」に戻す）してください。
+                </small>
+  </p>
+       </div>
+
+         <ul>
+ <li>
+             <strong>新規保存：</strong>
+      <ol>
+         <li>テンプレート選択を解除（「-- テンプレートを選択 --」）</li>
+              <li>セル対応表を設定</li>
+        <li>テンプレート名を入力（必須）</li>
+     <li>説明を入力（任意）</li>
+              <li>「<span class="help-badge">保存</span>」ボタンをクリック</li>
+  </ol>
+            </li>
+         <li>
+     <strong>読み込み：</strong>
+           <ol>
+      <li>「保存されたテンプレート」ドロップダウンから選択</li>
+       <li>「読み込み」ボタンをクリック</li>
+     <li>セル対応表が自動的に復元されます</li>
+  <li>ボタン表示が「<span class="help-badge bg-warning">上書き</span>」に変わります</li>
+            </ol>
+      </li>
+              <li>
+               <strong>上書き保存（重要）：</strong>
+          <div class="help-example mt-2">
+    <strong>手順：</strong>
+           <ol class="mb-2">
+     <li>「保存されたテンプレート」ドロップダウンから<strong>上書きしたいテンプレートを選択</strong></li>
+          <li>ボタンが「<span class="help-badge bg-warning">上書き</span>」に変わったことを確認</li>
+          <li>「読み込み」ボタンで既存設定を読み込む（任意、編集する場合）</li>
+  <li>セル対応表を編集・変更</li>
+    <li><strong>テンプレート名欄は空でもOK</strong>（既存名を維持）<br />
+      <small class="text-muted">※ 名前を変更したい場合は新しい名前を入力</small>
+          </li>
+ <li>「<span class="help-badge bg-warning">上書き</span>」ボタンをクリック</li>
+            </ol>
+     <div class="alert alert-warning mb-0">
+  <strong><i class="fas fa-exclamation-triangle"></i> 重要な注意点：</strong>
+       <ul class="mb-0">
+    <li>テンプレートが<strong>選択されている状態</strong>で保存ボタン（表示は「上書き」）を押すと<strong>上書き保存</strong>になります</li>
+                   <li>選択を解除（「-- テンプレートを選択 --」に戻す）してから保存すると<strong>新規保存</strong>になります</li>
+   <li>上書き保存では、既存の全項目が削除され、現在のセル対応表で完全に置き換えられます</li>
+   <li>小数点桁数と許容誤差も上書き保存されます</li>
+             <li><strong>誤って上書きしないよう、ボタンの表示を必ず確認してください</strong></li>
+ </ul>
+           </div>
+         </div>
+       </li>
+            <li>
+      <strong>削除：</strong>
+         <ol>
+       <li>テンプレートを選択</li>
+     <li>「削除」ボタンをクリック</li>
+        <li>確認ダイアログで「OK」を選択</li>
+  </ol>
+  </li>
+    </ul>
+     <div class="alert alert-info mt-2">
+            <i class="fas fa-lightbulb"></i> <strong>ポイント：</strong>
+    <ul class="mb-0">
+  <li>テンプレートには、ファイル名・シート名・セルアドレス・数式・小数点桁数・許容誤差が保存されます</li>
+   <li>ファイルアップロード前でもテンプレートは読み込めます（ファイル名で自動マッチング）</li>
+    <li>上書き保存が失敗する場合は、ブラウザのログ（F12 → Console）を確認してください</li>
+   <li><strong>ボタンの表示（「保存」or「上書き」）が現在の動作モードの目印です</strong></li>
+    </ul>
+   </div>
+   </div>
+
+            <div class="help-section">
+                <h5><i class="fas fa-download"></i> 結果のエクスポート</h5>
+                <p>比較結果はCSVファイルとしてダウンロードできます：</p>
+                <ul>
+                    <li>比較実行後、「CSV ダウンロード」ボタンをクリック</li>
+                    <li>UTF-8 BOM付きで出力（Excelで正しく開けます）</li>
+                    <li>項目名、値、数式、結果、メッセージが含まれます</li>
+                </ul>
+            </div>
+
+            <div class="text-center mt-4">
+                <button type="button" class="btn btn-primary" @onclick="HideHelp">
+                    <i class="fas fa-check"></i> 閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

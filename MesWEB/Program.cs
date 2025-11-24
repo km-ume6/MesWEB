@@ -1,6 +1,6 @@
 using MesWEB.Components;
-using MesWEB.Data;
-using MesWEB.Services;
+using MesWEB.Shared.Data; // 修正: MesWEB.Data → MesWEB.Shared.Data
+using MesWEB.Shared.Services;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 
@@ -149,6 +149,12 @@ else
 app.UseHttpsRedirection();
 app.UseAntiforgery();
 app.MapStaticAssets();
-app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
+
+// RCLプロジェクトのアセンブリを明示的に追加
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode()
+    .AddAdditionalAssemblies(
+        typeof(MesWEB.ExcelCompare.Components.Pages.ExcelCompare).Assembly,
+        typeof(MesWEB.GrowthNote.Components.Pages.GrowthNote).Assembly);
 
 app.Run();

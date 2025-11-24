@@ -1,0 +1,577 @@
+@page "/growth-note/add/android"
+@rendermode InteractiveServer
+
+@using MesWEB.Shared.Data
+@using MesWEB.Shared.Services
+@using System.Text.Json
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.JSInterop
+@inject AppDbContext Db
+@inject NavigationManager Navigation
+@inject Microsoft.Extensions.Logging.ILogger<AddGrowthNote> Logger
+@inject DeviceDetectionService DeviceService
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Add Record (Android)</PageTitle>
+
+<style>
+    /* 入力フィールドの配置設定 */
+    .form-control.text-input {
+        text-align: left !important;
+    }
+
+    .form-control.numeric-input {
+        text-align: right !important;
+    }
+
+    .form-control.date-input {
+        text-align: center !important;
+    }
+
+    /* Android用のラベルスタイル */
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.25rem;
+    }
+
+    /* Android用のカードスタイル */
+    .card {
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+
+    .card-body {
+        padding: 1.5rem;
+    }
+</style>
+
+<h3>新規レコード（Android対応）</h3>
+
+<!-- Android最適化されたフォーム -->
+<div class="card">
+    <div class="card-body">
+        <form @onsubmit="HandleSubmit" @onsubmit:preventDefault="true">
+            
+            <!-- ボタンエリア -->
+            <div class="mb-3">
+                <button type="submit" class="btn btn-primary">保存</button>
+                <button type="button" class="btn btn-secondary ms-2" @onclick="Cancel">キャンセル</button>
+            </div>
+
+            <!-- 基本情報 -->
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label">結晶育成日</label>
+                    <input type="date" @bind="newItem.CrystalGrowthDate" class="form-control date-input" required />
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label">担当者</label>
+                    <input id="operatorInput" type="text" @bind="newItem.Operator" @bind:after="StateHasChanged" class="form-control text-input" autocomplete="off" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label">装置名</label>
+                    <input id="machineInput" type="text" @bind="newItem.MachineName" @bind:after="StateHasChanged" class="form-control text-input" autocomplete="off" />
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label">添加元素</label>
+                    <input id="dopantInput" type="text" @bind="newItem.Dopants" @bind:after="StateHasChanged" class="form-control text-input" autocomplete="off" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label">添加量</label>
+                    <input type="number" step="0.01" @bind="newItem.DopantAmount" class="form-control numeric-input" />
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label">添加濃度(ppm)</label>
+                    <input type="number" @bind="newItem.ppm" class="form-control numeric-input" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label">結晶ロット</label>
+                    <input id="crystalLotInput" type="text" @bind="newItem.CrystalLot" @bind:after="StateHasChanged" class="form-control text-input" autocomplete="off" />
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label">ペレット投入量</label>
+                    <input type="number" @bind="newItem.PelletFeed" class="form-control numeric-input" />
+                </div>
+            </div>
+
+            <!-- ペレットロット -->
+            <div class="row mb-3">
+                <div class="col-12 col-md-4">
+                    <label class="form-label">ペレットロット①</label>
+                    <input id="pelletLot1Input" type="text" @bind="newItem.PelletLot1" @bind:after="StateHasChanged" class="form-control text-input" autocomplete="off" />
+                </div>
+                <div class="col-12 col-md-4">
+                    <label class="form-label">ペレットロット②</label>
+                    <input id="pelletLot2Input" type="text" @bind="newItem.PelletLot2" @bind:after="StateHasChanged" class="form-control text-input" autocomplete="off" />
+                </div>
+                <div class="col-12 col-md-4">
+                    <label class="form-label">ペレットロット③</label>
+                    <input id="pelletLot3Input" type="text" @bind="newItem.PelletLot3" @bind:after="StateHasChanged" class="form-control text-input" autocomplete="off" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label">カレット投入量</label>
+                    <input type="number" @bind="newItem.CulletFeed" class="form-control numeric-input" />
+                </div>
+            </div>
+
+            <!-- カレットロット -->
+            <div class="row mb-3">
+                <div class="col-12 col-md-4">
+                    <label class="form-label">カレットロット①</label>
+                    <input id="culletLot1Input" type="text" @bind="newItem.CulletLot1" @bind:after="StateHasChanged" class="form-control text-input" autocomplete="off" />
+                </div>
+                <div class="col-12 col-md-4">
+                    <label class="form-label">カレットロット②</label>
+                    <input id="culletLot2Input" type="text" @bind="newItem.CulletLot2" @bind:after="StateHasChanged" class="form-control text-input" autocomplete="off" />
+                </div>
+                <div class="col-12 col-md-4">
+                    <label class="form-label">カレットロット③</label>
+                    <input id="culletLot3Input" type="text" @bind="newItem.CulletLot3" @bind:after="StateHasChanged" class="form-control text-input" autocomplete="off" />
+                </div>
+            </div>
+
+            <!-- 坩堝情報 -->
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label">坩堝番号</label>
+                    <input id="crucibleInput" type="text" @bind="newItem.CrucibleName" @bind:after="StateHasChanged" class="form-control text-input" autocomplete="off" />
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label">坩堝使用回数</label>
+                    <input type="number" @bind="newItem.CrucibleCount" class="form-control numeric-input" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label">引上げ時間（⊿ｔ）</label>
+                    <input type="number" @bind="newItem.DeltaT" class="form-control numeric-input" />
+                </div>
+            </div>
+
+            <!-- 断熱材 -->
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label">坩堝内カオウール</label>
+                    <input id="insideInsulationInput" type="text" @bind="newItem.InsideInsulationComposition" @bind:after="StateHasChanged" class="form-control text-input" autocomplete="off" />
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label">坩堝底カオウール</label>
+                    <input id="bottomInsulationInput" type="text" @bind="newItem.BottomInsulationComposition" @bind:after="StateHasChanged" class="form-control text-input" autocomplete="off" />
+                </div>
+            </div>
+
+            <!-- 炉組条件 -->
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label">炉組条件①</label>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <input id="furnaceCondition1Input" type="text" @bind="newItem.FurnaceCondition1" @bind:after="StateHasChanged" class="form-control text-input" autocomplete="off" @ref="furnaceCondition1Input" />
+                        <select @onchange="OnFurnace1SymbolSelected" class="form-select" style="width:90px;">
+                            <option value="">記号</option>
+                            <option value="±">±</option>
+                            <option value=".">.</option>
+                            <option value="/">/</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label">炉組条件②</label>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <input id="furnaceCondition2Input" type="text" @bind="newItem.FurnaceCondition2" @bind:after="StateHasChanged" class="form-control text-input" autocomplete="off" @ref="furnaceCondition2Input" />
+                        <select @onchange="OnFurnace2SymbolSelected" class="form-select" style="width:90px;">
+                            <option value="">記号</option>
+                            <option value="±">±</option>
+                            <option value=".">.</option>
+                            <option value="/">/</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label">リング高さ</label>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <input type="text" @bind="newItem.RingHeightPosition" @bind:after="StateHasChanged" class="form-control text-input" @ref="ringHeightInput" />
+                        <select @onchange="OnSymbolSelected" class="form-select" style="width:90px;">
+                            <option value="">記号</option>
+                            <option value="±">±</option>
+                            <option value=".">.</option>
+                            <option value="/">/</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label">ジルコニア円板</label>
+                    <input id="diskInput" type="text" @bind="newItem.UsingDisk" @bind:after="StateHasChanged" class="form-control text-input" autocomplete="off" />
+                </div>
+            </div>
+
+            <!-- 時刻情報 -->
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label">育成開始時刻 (HH:MM)</label>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <input type="text" @bind="growthStartTimeStr" class="form-control date-input" placeholder="12:34" @ref="growthStartTimeInput" />
+                        <button type="button" class="btn btn-outline-secondary" style="min-width:32px;padding:2px 8px;" @onclick="() => OnTimeColonClicked(growthStartTimeInput, v => growthStartTimeStr = v)">:</button>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label">肩育成終了時刻 (HH:MM)</label>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <input type="text" @bind="shoulderEndTimeStr" class="form-control date-input" placeholder="12:34" @ref="shoulderEndTimeInput" />
+                        <button type="button" class="btn btn-outline-secondary" style="min-width:32px;padding:2px 8px;" @onclick="() => OnTimeColonClicked(shoulderEndTimeInput, v => shoulderEndTimeStr = v)">:</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 電源出力 -->
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label">ネッキング時電源出力</label>
+                    <input type="number" step="0.01" @bind="newItem.NeckingVoltage" class="form-control numeric-input" />
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label">育成時電源出力</label>
+                    <input type="number" step="0.01" @bind="newItem.GrowthVoltage" class="form-control numeric-input" />
+                </div>
+            </div>
+
+            <!-- 位置・速度関連 -->
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label">シード位置</label>
+                    <input type="number" step="0.01" @bind="newItem.SeedHeightPosition" class="form-control numeric-input" />
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label">初期引上げ速度</label>
+                    <input type="number" step="0.01" @bind="newItem.StartPullingSpeed" class="form-control numeric-input" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label">肩育成引上げ速度</label>
+                    <input type="number" step="0.01" @bind="newItem.ShoulderEndPullingSpeed" class="form-control numeric-input" />
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label">直胴部引上げ速度</label>
+                    <input type="number" step="0.01" @bind="newItem.LastPullingSpeed" class="form-control numeric-input" />
+                </div>
+            </div>
+
+            <!-- 回転速度 -->
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label">初期シード回転数</label>
+                    <input type="number" step="0.01" @bind="newItem.FirstRotationalSpeed" class="form-control numeric-input" />
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label">肩育成シード回転数</label>
+                    <input type="number" step="0.01" @bind="newItem.ShoulderEndRotationalSpeed" class="form-control numeric-input" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label">直胴部シード回転数</label>
+                    <input type="number" step="0.01" @bind="newItem.LastRotationalSpeed" class="form-control numeric-input" />
+                </div>
+            </div>
+
+            <!-- ワークコイル -->
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label">ワークコイル重心位置</label>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <input type="text" @bind="newItem.GravityCenterWC" @bind:after="StateHasChanged" class="form-control text-input" @ref="gravityCenterInput" />
+                        <select @onchange="OnGravitySymbolSelected" class="form-select" style="width:90px;">
+                            <option value="">記号</option>
+                            <option value="±">±</option>
+                            <option value=".">.</option>
+                            <option value="/">/</option>
+                            <option value="(">(</option>
+                            <option value=")">)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label">育成時ワークコイル位置</label>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <input type="text" @bind="newItem.HeightPositionWC" @bind:after="StateHasChanged" class="form-control text-input" @ref="heightPositionWCInput" />
+                        <select @onchange="OnHeightPositionSymbolSelected" class="form-select" style="width:90px;">
+                            <option value="">記号</option>
+                            <option value="±">±</option>
+                            <option value=".">.</option>
+                            <option value="/">/</option>
+                            <option value="(">(</option>
+                            <option value=")">)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 結晶径 -->
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label">結晶ヘッド径</label>
+                    <input type="number" @bind="newItem.HeadDiameter" class="form-control numeric-input" />
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label">結晶テール径</label>
+                    <input type="number" @bind="newItem.TailDiameter" class="form-control numeric-input" />
+                </div>
+            </div>
+
+            <!-- 電源出力 -->
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label">電源出力電圧</label>
+                    <input type="number" @bind="newItem.OutputVoltage" class="form-control numeric-input" />
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label">電源出力電流</label>
+                    <input type="number" @bind="newItem.OutputCurrent" class="form-control numeric-input" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label">液面高さ</label>
+                    <input id="liquidLevelInput" type="text" @bind="newItem.LiquidLevel" @bind:after="StateHasChanged" class="form-control text-input" autocomplete="off" />
+                </div>
+            </div>
+
+            <!-- 備考 -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <label class="form-label">備考</label>
+                    <textarea @bind="newItem.Remarks" class="form-control text-input" rows="3"></textarea>
+                </div>
+            </div>
+
+            <!-- ボタンエリア（再掲） -->
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">保存</button>
+                <button type="button" class="btn btn-secondary ms-2" @onclick="Cancel">キャンセル</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@code {
+    private GrowthNoteItem newItem = new()
+    {
+        CrystalGrowthDate = DateTime.Today
+    };
+    private string? growthStartTimeStr;
+    private string? shoulderEndTimeStr;
+
+    // 既存データのリスト
+    private List<string> existingOperators = new();
+    private List<string> existingMachines = new();
+    private List<string> existingDopants = new();
+    private List<string> existingCrystalLots = new();
+    private List<string> existingPelletLots = new();
+    private List<string> existingCulletLots = new();
+    private List<string> existingCrucibles = new();
+    private List<string> existingInsideInsulation = new();
+    private List<string> existingBottomInsulation = new();
+    private List<string> existingFurnaceConditions = new();
+    private List<string> existingRingPositions = new();
+    private List<string> existingDisks = new();
+    private List<string> existingGravityCenters = new();
+    private List<string> existingHeightPositions = new();
+    private List<string> existingLiquidLevels = new();
+
+    // 記号入力用のElementReference
+    private ElementReference ringHeightInput;
+    private ElementReference gravityCenterInput;
+    private ElementReference furnaceCondition1Input;
+    private ElementReference furnaceCondition2Input;
+    private ElementReference heightPositionWCInput;
+    private ElementReference growthStartTimeInput;
+    private ElementReference shoulderEndTimeInput;
+
+    // 記号の挿入メソッド
+    private Task OnFurnace1SymbolSelected(ChangeEventArgs e)
+        => InsertSymbol(furnaceCondition1Input, v => newItem.FurnaceCondition1 = v, e);
+
+    private Task OnFurnace2SymbolSelected(ChangeEventArgs e)
+        => InsertSymbol(furnaceCondition2Input, v => newItem.FurnaceCondition2 = v, e);
+
+    private Task OnHeightPositionSymbolSelected(ChangeEventArgs e)
+        => InsertSymbol(heightPositionWCInput, v => newItem.HeightPositionWC = v, e);
+
+    private Task OnTimeColonClicked(ElementReference inputRef, Action<string> setValue)
+        => InsertSymbol(inputRef, setValue, new ChangeEventArgs { Value = ":" });
+
+    private Task OnSymbolSelected(ChangeEventArgs e)
+        => InsertSymbol(ringHeightInput, v => newItem.RingHeightPosition = v, e);
+
+    private Task OnGravitySymbolSelected(ChangeEventArgs e)
+        => InsertSymbol(gravityCenterInput, v => newItem.GravityCenterWC = v, e);
+
+    private async Task InsertSymbol(ElementReference inputRef, Action<string> setValue, ChangeEventArgs e)
+    {
+        var symbol = e.Value?.ToString();
+        if (!string.IsNullOrEmpty(symbol))
+        {
+            await JSRuntime.InvokeVoidAsync("insertAtCursorAndFocus", inputRef, symbol);
+            var value = await JSRuntime.InvokeAsync<string>("getInputValue", inputRef);
+            setValue(value);
+            StateHasChanged();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadExistingData();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await DeviceService.DetectDeviceAsync(JSRuntime);
+
+            // Initialize Awesomplete for autocomplete inputs
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("autocomplete.init", "operatorInput", existingOperators);
+                await JSRuntime.InvokeVoidAsync("autocomplete.init", "machineInput", existingMachines);
+                await JSRuntime.InvokeVoidAsync("autocomplete.init", "dopantInput", existingDopants);
+                await JSRuntime.InvokeVoidAsync("autocomplete.init", "crystalLotInput", existingCrystalLots);
+                await JSRuntime.InvokeVoidAsync("autocomplete.init", "pelletLot1Input", existingPelletLots);
+                await JSRuntime.InvokeVoidAsync("autocomplete.init", "pelletLot2Input", existingPelletLots);
+                await JSRuntime.InvokeVoidAsync("autocomplete.init", "pelletLot3Input", existingPelletLots);
+                await JSRuntime.InvokeVoidAsync("autocomplete.init", "culletLot1Input", existingCulletLots);
+                await JSRuntime.InvokeVoidAsync("autocomplete.init", "culletLot2Input", existingCulletLots);
+                await JSRuntime.InvokeVoidAsync("autocomplete.init", "culletLot3Input", existingCulletLots);
+                await JSRuntime.InvokeVoidAsync("autocomplete.init", "crucibleInput", existingCrucibles);
+                await JSRuntime.InvokeVoidAsync("autocomplete.init", "insideInsulationInput", existingInsideInsulation);
+                await JSRuntime.InvokeVoidAsync("autocomplete.init", "bottomInsulationInput", existingBottomInsulation);
+                await JSRuntime.InvokeVoidAsync("autocomplete.init", "diskInput", existingDisks);
+                await JSRuntime.InvokeVoidAsync("autocomplete.init", "liquidLevelInput", existingLiquidLevels);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Autocomplete init failed: {ex.Message}");
+            }
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadExistingData()
+    {
+        var allNotes = await Db.GrowthNotes.ToListAsync();
+
+        existingOperators = allNotes.Where(n => !string.IsNullOrWhiteSpace(n.Operator))
+            .Select(n => n.Operator!).Distinct().OrderBy(x => x).ToList();
+
+        existingMachines = allNotes.Where(n => !string.IsNullOrWhiteSpace(n.MachineName))
+            .Select(n => n.MachineName!).Distinct().OrderBy(x => x).ToList();
+
+        existingDopants = allNotes.Where(n => !string.IsNullOrWhiteSpace(n.Dopants))
+            .Select(n => n.Dopants!).Distinct().OrderBy(x => x).ToList();
+
+        existingCrystalLots = allNotes.Where(n => !string.IsNullOrWhiteSpace(n.CrystalLot))
+            .Select(n => n.CrystalLot!).Distinct().OrderBy(x => x).ToList();
+
+        existingPelletLots = allNotes.SelectMany(n => new[] { n.PelletLot1, n.PelletLot2, n.PelletLot3 })
+            .Where(lot => !string.IsNullOrWhiteSpace(lot)).Select(lot => lot!).Distinct().OrderBy(x => x).ToList();
+
+        existingCulletLots = allNotes.SelectMany(n => new[] { n.CulletLot1, n.CulletLot2, n.CulletLot3 })
+            .Where(lot => !string.IsNullOrWhiteSpace(lot)).Select(lot => lot!).Distinct().OrderBy(x => x).ToList();
+
+        existingCrucibles = allNotes.Where(n => !string.IsNullOrWhiteSpace(n.CrucibleName))
+            .Select(n => n.CrucibleName!).Distinct().OrderBy(x => x).ToList();
+
+        existingInsideInsulation = allNotes.Where(n => !string.IsNullOrWhiteSpace(n.InsideInsulationComposition))
+            .Select(n => n.InsideInsulationComposition!).Distinct().OrderBy(x => x).ToList();
+
+        existingBottomInsulation = allNotes.Where(n => !string.IsNullOrWhiteSpace(n.BottomInsulationComposition))
+            .Select(n => n.BottomInsulationComposition!).Distinct().OrderBy(x => x).ToList();
+
+        existingFurnaceConditions = allNotes.SelectMany(n => new[] { n.FurnaceCondition1, n.FurnaceCondition2 })
+            .Where(cond => !string.IsNullOrWhiteSpace(cond)).Select(cond => cond!).Distinct().OrderBy(x => x).ToList();
+
+        existingRingPositions = allNotes.Where(n => !string.IsNullOrWhiteSpace(n.RingHeightPosition))
+            .Select(n => n.RingHeightPosition!).Distinct().OrderBy(x => x).ToList();
+
+        existingDisks = allNotes.Where(n => !string.IsNullOrWhiteSpace(n.UsingDisk))
+            .Select(n => n.UsingDisk!).Distinct().OrderBy(x => x).ToList();
+
+        existingGravityCenters = allNotes.Where(n => !string.IsNullOrWhiteSpace(n.GravityCenterWC))
+            .Select(n => n.GravityCenterWC!).Distinct().OrderBy(x => x).ToList();
+
+        existingHeightPositions = allNotes.Where(n => !string.IsNullOrWhiteSpace(n.HeightPositionWC))
+            .Select(n => n.HeightPositionWC!).Distinct().OrderBy(x => x).ToList();
+
+        existingLiquidLevels = allNotes.Where(n => !string.IsNullOrWhiteSpace(n.LiquidLevel))
+            .Select(n => n.LiquidLevel!).Distinct().OrderBy(x => x).ToList();
+    }
+
+    private async Task HandleSubmit()
+    {
+        // HH:MM形式で時間を解析（秒は00で固定）
+        if (!string.IsNullOrWhiteSpace(growthStartTimeStr))
+        {
+            if (TimeSpan.TryParseExact(growthStartTimeStr, @"hh\:mm", null, out var gts))
+            {
+                newItem.GrowthStartTime = gts;
+            }
+            else if (TimeSpan.TryParseExact(growthStartTimeStr, @"h\:mm", null, out var gts2))
+            {
+                newItem.GrowthStartTime = gts2;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(shoulderEndTimeStr))
+        {
+            if (TimeSpan.TryParseExact(shoulderEndTimeStr, @"hh\:mm", null, out var sets))
+            {
+                newItem.ShoulderEndTime = sets;
+            }
+            else if (TimeSpan.TryParseExact(shoulderEndTimeStr, @"h\:mm", null, out var sets2))
+            {
+                newItem.ShoulderEndTime = sets2;
+            }
+        }
+
+        newItem.CreatedAt = DateTime.UtcNow;
+        
+        Db.GrowthNotes.Add(newItem);
+        await Db.SaveChangesAsync();
+
+        Navigation.NavigateTo("/growth-note");
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/growth-note");
+    }
+
+    private void OnInputChange(ChangeEventArgs e, Action<string?> setValue)
+    {
+        var value = e.Value?.ToString();
+        setValue(value);
+        StateHasChanged();
+    }
+}

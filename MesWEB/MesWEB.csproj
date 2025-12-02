@@ -40,20 +40,32 @@
   </ItemGroup>
 
   <!-- Web Deploy パッケージを作成後、ネットワーク共有にコピー -->
-  <Target Name="CopyDeployPackageToNetworkShare" AfterTargets="Package" Condition="Exists('$(ProjectDir)bin\Release\Package\MesWEB.zip')">
+  <Target Name="CopyDeployPackageToNetworkShare" AfterTargets="Package;Publish">
     <PropertyGroup>
-      <PackageZipPath>$(ProjectDir)bin\Release\Package\MesWEB.zip</PackageZipPath>
       <NetworkSharePath>\\192.168.11.100\share\MES\Deploys\MesWEB\</NetworkSharePath>
+      <PackageSearchFolder>$(ProjectDir)bin\$(Configuration)\Package</PackageSearchFolder>
     </PropertyGroup>
+
+    <!-- 検出: パッケージが複数の出力先に作成される可能性があるため、複数パターンで検索 -->
+    <ItemGroup>
+      <WebPackages Include="$(PackageSearchFolder)\**\*.zip" />
+      <WebPackages Include="$(ProjectDir)bin\$(Configuration)\**\*.zip" />
+      <WebPackages Include="$(ProjectDir)bin\**\Package\**\*.zip" />
+    </ItemGroup>
+
     <Message Text="==========================================" Importance="high" />
-    <Message Text="デプロイパッケージをコピーしています..." Importance="high" />
-    <Message Text="From: $(PackageZipPath)" Importance="high" />
-    <Message Text="To:   $(NetworkSharePath)" Importance="high" />
+    <Message Text="デプロイパッケージを検索しています..." Importance="high" />
+    <Message Text="NetworkSharePath: $(NetworkSharePath)" Importance="high" />
+    <Message Text="Found packages: @(WebPackages)" Importance="high" />
+
     <MakeDir Directories="$(NetworkSharePath)" Condition="!Exists('$(NetworkSharePath)')" />
-    <Copy SourceFiles="$(PackageZipPath)" 
+
+    <Copy SourceFiles="@(WebPackages)" 
           DestinationFolder="$(NetworkSharePath)" 
-          SkipUnchangedFiles="false" />
-    <Message Text="✓ コピー完了: $(NetworkSharePath)MesWEB.zip" Importance="high" />
+          SkipUnchangedFiles="false" Condition="'@(WebPackages)' != ''" />
+
+    <Message Text="@(WebPackages->Count()) パッケージをコピーしました: $(NetworkSharePath)" Importance="high" Condition="'@(WebPackages)' != ''" />
+    <Message Text="パッケージが見つかりませんでした。Package ターゲットの出力先や構成（Debug/Release）を確認してください。" Importance="high" Condition="'@(WebPackages)' == ''" />
     <Message Text="==========================================" Importance="high" />
   </Target>
 

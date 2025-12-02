@@ -53,10 +53,41 @@
         border-radius: 0.375rem;
         border: 1px solid #dee2e6;
         margin-bottom: 0.5rem;
+        position: relative;
     }
 
     .file-name-input {
         border-left: 3px solid #0d6efd;
+    }
+
+    /* Compact summary styles */
+    .mapping-summary {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        font-size: 0.9rem;
+        padding-left: 2.2rem;
+    }
+
+    .mapping-summary .col {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .mapping-detail {
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px dashed #e9ecef;
+    }
+
+    /* ドラッグハンドル用スタイル */
+    .drag-handle {
+        position: absolute;
+        left: 0.5rem;
+        top: 0.75rem;
+        cursor: move;
+        color: #6c757d;
     }
 
     /* ヘルプモーダル用スタイル */
@@ -154,6 +185,88 @@
         border-radius: 0.25rem;
         font-size: 0.875rem;
     }
+
+    /* Floating navigation buttons */
+    .floating-nav {
+        position: fixed;
+        right: 2rem;
+        bottom: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        z-index: 1000;
+    }
+
+    .floating-nav .btn {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        transition: all 0.2s ease;
+    }
+
+    .floating-nav .btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .floating-nav .btn i {
+        font-size: 1.2rem;
+    }
+
+    /* Floating toolbar */
+    .floating-toolbar {
+        position: fixed;
+        right: 2rem;
+        bottom: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        z-index: 1000;
+    }
+
+    .floating-toolbar .btn-group-vertical {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        border-radius: 25px;
+    }
+
+    .floating-toolbar .btn {
+        border-radius: 0;
+        min-width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        border: none;
+    }
+
+    .floating-toolbar .btn:first-child {
+        border-radius: 25px 25px 0 0;
+    }
+
+    .floating-toolbar .btn:last-child {
+        border-radius: 0 0 25px 25px;
+    }
+
+    .floating-toolbar .btn:hover {
+        transform: translateX(-5px);
+        z-index: 1;
+    }
+
+    .floating-toolbar .btn i {
+        font-size: 1.2rem;
+    }
+
+    .floating-toolbar .separator {
+        height: 1px;
+        background-color: rgba(255,255,255,0.3);
+        margin: 0;
+    }
 </style>
 
 <h3>
@@ -213,8 +326,15 @@
             <input type="text" @bind="newTemplateDescription" class="form-control" placeholder="説明（任意）" />
         </div>
         <div class="col-md-2">
+            @{
+                var inputName = newTemplateName?.Trim();
+                var isExistingName = !string.IsNullOrWhiteSpace(inputName) && 
+                    savedTemplates.Any(t => t.TemplateName.Equals(inputName, StringComparison.OrdinalIgnoreCase));
+                var isOverwrite = isExistingName || (selectedTemplateId > 0 && string.IsNullOrWhiteSpace(inputName));
+                var buttonText = isOverwrite ? "上書き" : "保存";
+            }
             <button type="button" class="btn btn-success" @onclick="SaveTemplate" disabled="@(cellMappings.Count == 0)">
-                <i class="fas fa-save"></i> @(string.IsNullOrWhiteSpace(newTemplateName) && selectedTemplateId > 0 ? "上書き" : "保存")
+                <i class="fas fa-save"></i> @buttonText
             </button>
         </div>
     </div>
@@ -258,175 +378,265 @@
 <div class="mapping-section">
     <h4>セル対応表の設定</h4>
 
+    <div id="mapping-list">
     @for (int i = 0; i < cellMappings.Count; i++)
     {
         var index = i;
-        <div class="mapping-row">
-            <div class="row g-2 align-items-center mb-2">
-                <div class="col-12">
-                    <label class="form-label fw-bold mb-1">項目名</label>
-                    <input type="text" @bind="cellMappings[index].ItemName" class="form-control" placeholder="例: 結晶育成日" />
-                </div>
-            </div>
+        <div class="mapping-row" data-id="@index" draggable="true">
+            <span class="drag-handle" title="ドラッグして並べ替え">
+                <i class="fas fa-grip-vertical"></i>
+            </span>
 
-            <div class="row g-2 align-items-center">
-                <!-- ブック1 -->
-                <div class="col-md-6">
-                    <div class="border-start border-primary border-3 ps-2">
-                        <label class="form-label mb-1 text-primary"><strong>ブック1</strong></label>
-                        <div class="row g-2">
-                            <div class="col-12">
-                                <label class="form-label small mb-1">ファイル名（手入力またはドロップダウンから選択）</label>
-                                <input type="text"
-                                       @bind="cellMappings[index].Book1FileName"
-                                       @bind:after="() => UpdateBookIndexFromFileName(index,1)"
-                                       class="form-control form-control-sm file-name-input mb-2"
-                                       placeholder="例: 報告書_A.xlsx"
-                                       list="@($"book-list-{index}-1")" />
-                                <datalist id="@($"book-list-{index}-1")">
-                                    @foreach (var book in uploadedBooks)
-                                    {
-                                        <option value="@book.FileName">@book.FileName</option>
-                                    }
-                                </datalist>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label small mb-1">シートを選択</label>
-                                <select @bind="cellMappings[index].Sheet1Name"
-                                        class="form-select form-select-sm"
-                                        disabled="@(cellMappings[index].Book1Index < 0)">
-                                    <option value="">-- シートを選択 --</option>
-                                    @if (cellMappings[index].Book1Index >= 0 && cellMappings[index].Book1Index < uploadedBooks.Count)
-                                    {
-                                        @foreach (var sheet in uploadedBooks[cellMappings[index].Book1Index].Workbook.Worksheets)
-                                        {
-                                            <option value="@sheet.Name">@sheet.Name</option>
-                                        }
-                                    }
-                                </select>
-                                @if (cellMappings[index].Book1Index < 0 && !string.IsNullOrEmpty(cellMappings[index].Book1FileName))
-                                {
-                                    <small class="text-warning">? ファイル「@cellMappings[index].Book1FileName」が見つかりません</small>
-                                }
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label small mb-1">セルアドレスまたは範囲</label>
-                                <input type="text" @bind="cellMappings[index].Sheet1Cell"
-                                       class="form-control form-control-sm"
-                                       placeholder="例: A1 または A1:A10" />
-                                <small class="text-muted">範囲の場合、数式を選択してください</small>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label small mb-1">数式</label>
-                                <select @bind="cellMappings[index].Sheet1Formula" class="form-select form-select-sm">
-                                    <option value="@FormulaType.None">なし（セル値）</option>
-                                    <option value="@FormulaType.Max">最大値（MAX）</option>
-                                    <option value="@FormulaType.Min">最小値（MIN）</option>
-                                    <option value="@FormulaType.Average">平均値（AVERAGE）</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
+            <!-- Compact summary row -->
+            <div class="mapping-summary">
+                <div class="col" style="flex:2">
+                    <strong>@cellMappings[index].ItemName</strong>
                 </div>
-
-                <!-- ブック2 -->
-                <div class="col-md-6">
-                    <div class="border-start border-success border-3 ps-2">
-                        <label class="form-label mb-1 text-success"><strong>ブック2</strong></label>
-                        <div class="row g-2">
-                            <div class="col-12">
-                                <label class="form-label small mb-1">ファイル名（手入力またはドロップダウンから選択）</label>
-                                <input type="text"
-                                       @bind="cellMappings[index].Book2FileName"
-                                       @bind:after="() => UpdateBookIndexFromFileName(index,2)"
-                                       class="form-control form-control-sm file-name-input mb-2"
-                                       placeholder="例: 報告書_B.xlsx"
-                                       list="@($"book-list-{index}-2")" />
-                                <datalist id="@($"book-list-{index}-2")">
-                                    @foreach (var book in uploadedBooks)
-                                    {
-                                        <option value="@book.FileName">@book.FileName</option>
-                                    }
-                                </datalist>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label small mb-1">シートを選択</label>
-                                <select @bind="cellMappings[index].Sheet2Name"
-                                        class="form-select form-select-sm"
-                                        disabled="@(cellMappings[index].Book2Index < 0)">
-                                    <option value="">-- シートを選択 --</option>
-                                    @if (cellMappings[index].Book2Index >= 0 && cellMappings[index].Book2Index < uploadedBooks.Count)
-                                    {
-                                        @foreach (var sheet in uploadedBooks[cellMappings[index].Book2Index].Workbook.Worksheets)
-                                        {
-                                            <option value="@sheet.Name">@sheet.Name</option>
-                                        }
-                                    }
-                                </select>
-                                @if (cellMappings[index].Book2Index < 0 && !string.IsNullOrEmpty(cellMappings[index].Book2FileName))
-                                {
-                                    <small class="text-warning">? ファイル「@cellMappings[index].Book2FileName」が見つかりません</small>
-                                }
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label small mb-1">セルアドレスまたは範囲</label>
-                                <input type="text" @bind="cellMappings[index].Sheet2Cell"
-                                       class="form-control form-control-sm"
-                                       placeholder="例: B5 または B1:B10" />
-                                <small class="text-muted">範囲の場合、数式を選択してください</small>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label small mb-1">数式</label>
-                                <select @bind="cellMappings[index].Sheet2Formula" class="form-select form-select-sm">
-                                    <option value="@FormulaType.None">なし（セル値）</option>
-                                    <option value="@FormulaType.Max">最大値（MAX）</option>
-                                    <option value="@FormulaType.Min">最小値（MIN）</option>
-                                    <option value="@FormulaType.Average">平均値（AVERAGE）</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
+                <div class="col text-muted" style="flex:3">
+                    <small>1: @cellMappings[index].Book1FileName@if(!string.IsNullOrEmpty(cellMappings[index].Sheet1Name)){<text>/@cellMappings[index].Sheet1Name</text>}<text>:</text>@cellMappings[index].Sheet1Cell</small>
                 </div>
-            </div>
-
-            <!-- 数値比較設定 -->
-            <div class="row g-2 mt-2">
-                <div class="col-md-6">
-                    <div class="border-start border-warning border-3 ps-2">
-                        <label class="form-label small mb-1 text-warning"><strong>数値比較設定</strong></label>
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <label class="form-label small mb-1">小数点以下桁数</label>
-                                <input type="number" @bind="cellMappings[index].DecimalPlaces"
-                                       class="form-control form-control-sm"
-                                       min="0" max="10" />
-                                <small class="text-muted">0～10桁</small>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label small mb-1">許容誤差（±）</label>
-                                <input type="number" @bind="cellMappings[index].Tolerance"
-                                       class="form-control form-control-sm"
-                                       step="0.0001" min="0" />
-                                <small class="text-muted">例: 0.01</small>
-                            </div>
-                        </div>
-                    </div>
+                <div class="col text-muted" style="flex:3">
+                    <small>2: @cellMappings[index].Book2FileName@if(!string.IsNullOrEmpty(cellMappings[index].Sheet2Name)){<text>/@cellMappings[index].Sheet2Name</text>}<text>:</text>@cellMappings[index].Sheet2Cell</small>
                 </div>
-            </div>
-
-            <div class="row mt-2">
-                <div class="col-12 text-end">
-                    <button type="button" class="btn btn-danger btn-sm" @onclick="() => RemoveMapping(index)">
-                        <i class="fas fa-trash"></i> この項目を削除
+                <div class="col text-center" style="flex:1">
+                    <small>@(cellMappings[index].Sheet1Formula == FormulaType.None ? "" : cellMappings[index].Sheet1Formula.ToString())</small>
+                </div>
+                <div class="col text-center" style="flex:1">
+                    <small>@(cellMappings[index].Sheet2Formula == FormulaType.None ? "" : cellMappings[index].Sheet2Formula.ToString())</small>
+                </div>
+                <div class="col text-center" style="flex:1">
+                    <small>DP:@cellMappings[index].DecimalPlaces</small>
+                </div>
+                <div class="col text-end flex-shrink-0" style="width:36px">
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => ToggleMappingExpand(index)">
+                        @if (IsMappingExpanded(index))
+                        {
+                            <i class="fas fa-chevron-up"></i>
+                        }
+                        else
+                        {
+                            <i class="fas fa-chevron-down"></i>
+                        }
                     </button>
                 </div>
             </div>
+
+            @if (IsMappingExpanded(index))
+            {
+                <div class="mapping-detail">
+                    <div class="row g-2 align-items-center mb-2">
+                        <div class="col-12">
+                            <label class="form-label fw-bold mb-1">項目名</label>
+                            <input type="text" @bind="cellMappings[index].ItemName" class="form-control" placeholder="例: 結晶育成日" />
+                        </div>
+                    </div>
+
+                    <div class="row g-2 align-items-center">
+                        <!-- ブック1 -->
+                        <div class="col-md-6">
+                            <div class="border-start border-primary border-3 ps-2">
+                                <label class="form-label mb-1 text-primary"><strong>ブック1</strong></label>
+                                <div class="row g-2">
+                                    <div class="col-12">
+                                        <label class="form-label small mb-1">ファイル名を選択または入力</label>
+                                        <select @bind="cellMappings[index].Book1FileName"
+                                                @bind:after="() => UpdateBookIndexFromFileName(index,1)"
+                                                class="form-select form-select-sm file-name-input mb-2">
+                                            <option value="">-- ファイルを選択 --</option>
+                                            @foreach (var book in uploadedBooks)
+                                            {
+                                                <option value="@book.FileName">@book.FileName</option>
+                                            }
+                                        </select>
+                                        @if (uploadedBooks.Count == 0)
+                                        {
+                                            <small class="text-muted">ファイルをアップロードすると候補が表示されます</small>
+                                        }
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small mb-1">シートを選択</label>
+                                        <select @bind="cellMappings[index].Sheet1Name"
+                                                class="form-select form-select-sm"
+                                                disabled="@(cellMappings[index].Book1Index < 0)">
+                                            <option value="">-- シートを選択 --</option>
+                                            @if (cellMappings[index].Book1Index >= 0 && cellMappings[index].Book1Index < uploadedBooks.Count)
+                                            {
+                                                var hasMatchingSheet = false;
+                                                @foreach (var sheet in uploadedBooks[cellMappings[index].Book1Index].Workbook.Worksheets)
+                                                {
+                                                    if (sheet.Name == cellMappings[index].Sheet1Name)
+                                                    {
+                                                        hasMatchingSheet = true;
+                                                    }
+                                                    <option value="@sheet.Name">@sheet.Name</option>
+                                                }
+                                                @if (!hasMatchingSheet && !string.IsNullOrEmpty(cellMappings[index].Sheet1Name))
+                                                {
+                                                    <option value="@cellMappings[index].Sheet1Name" disabled>@cellMappings[index].Sheet1Name (見つかりません)</option>
+                                                }
+                                            }
+                                        </select>
+                                        @if (cellMappings[index].Book1Index < 0 && !string.IsNullOrEmpty(cellMappings[index].Book1FileName))
+                                        {
+                                            <small class="text-warning">⚠ ファイル「@cellMappings[index].Book1FileName」が見つかりません</small>
+                                        }
+                                        else if (cellMappings[index].Book1Index >= 0 && !string.IsNullOrEmpty(cellMappings[index].Sheet1Name))
+                                        {
+                                            var sheetExists = uploadedBooks[cellMappings[index].Book1Index].Workbook.Worksheets.Any(s => s.Name == cellMappings[index].Sheet1Name);
+                                            if (!sheetExists)
+                                            {
+                                                <small class="text-warning">⚠ シート「@cellMappings[index].Sheet1Name」が見つかりません</small>
+                                            }
+                                        }
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small mb-1">セルアドレスまたは範囲</label>
+                                        <input type="text" @bind="cellMappings[index].Sheet1Cell"
+                                               class="form-control form-control-sm"
+                                               placeholder="例: A1 または A1:A10" />
+                                        <small class="text-muted">範囲の場合、数式を選択してください</small>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small mb-1">数式</label>
+                                        <select @bind="cellMappings[index].Sheet1Formula" class="form-select form-select-sm">
+                                            <option value="@FormulaType.None">なし（セル値）</option>
+                                            <option value="@FormulaType.Max">最大値（MAX）</option>
+                                            <option value="@FormulaType.Min">最小値（MIN）</option>
+                                            <option value="@FormulaType.Average">平均値（AVERAGE）</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ブック2 -->
+                        <div class="col-md-6">
+                            <div class="border-start border-success border-3 ps-2">
+                                <label class="form-label mb-1 text-success"><strong>ブック2</strong></label>
+                                <div class="row g-2">
+                                    <div class="col-12">
+                                        <label class="form-label small mb-1">ファイル名を選択または入力</label>
+                                        <select @bind="cellMappings[index].Book2FileName"
+                                                @bind:after="() => UpdateBookIndexFromFileName(index,2)"
+                                                class="form-select form-select-sm file-name-input mb-2">
+                                            <option value="">-- ファイルを選択 --</option>
+                                            @foreach (var book in uploadedBooks)
+                                            {
+                                                <option value="@book.FileName">@book.FileName</option>
+                                            }
+                                        </select>
+                                        @if (uploadedBooks.Count == 0)
+                                        {
+                                            <small class="text-muted">ファイルをアップロードすると候補が表示されます</small>
+                                        }
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small mb-1">シートを選択</label>
+                                        <select @bind="cellMappings[index].Sheet2Name"
+                                                class="form-select form-select-sm"
+                                                disabled="@(cellMappings[index].Book2Index < 0)">
+                                            <option value="">-- シートを選択 --</option>
+                                            @if (cellMappings[index].Book2Index >= 0 && cellMappings[index].Book2Index < uploadedBooks.Count)
+                                            {
+                                                var hasMatchingSheet = false;
+                                                @foreach (var sheet in uploadedBooks[cellMappings[index].Book2Index].Workbook.Worksheets)
+                                                {
+                                                    if (sheet.Name == cellMappings[index].Sheet2Name)
+                                                    {
+                                                        hasMatchingSheet = true;
+                                                    }
+                                                    <option value="@sheet.Name">@sheet.Name</option>
+                                                }
+                                                @if (!hasMatchingSheet && !string.IsNullOrEmpty(cellMappings[index].Sheet2Name))
+                                                {
+                                                    <option value="@cellMappings[index].Sheet2Name" disabled>@cellMappings[index].Sheet2Name (見つかりません)</option>
+                                                }
+                                            }
+                                        </select>
+                                        @if (cellMappings[index].Book2Index < 0 && !string.IsNullOrEmpty(cellMappings[index].Book2FileName))
+                                        {
+                                            <small class="text-warning">⚠ ファイル「@cellMappings[index].Book2FileName」が見つかりません</small>
+                                        }
+                                        else if (cellMappings[index].Book2Index >= 0 && !string.IsNullOrEmpty(cellMappings[index].Sheet2Name))
+                                        {
+                                            var sheetExists = uploadedBooks[cellMappings[index].Book2Index].Workbook.Worksheets.Any(s => s.Name == cellMappings[index].Sheet2Name);
+                                            if (!sheetExists)
+                                            {
+                                                <small class="text-warning">⚠ シート「@cellMappings[index].Sheet2Name」が見つかりません</small>
+                                            }
+                                        }
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small mb-1">セルアドレスまたは範囲</label>
+                                        <input type="text" @bind="cellMappings[index].Sheet2Cell"
+                                               class="form-control form-control-sm"
+                                               placeholder="例: B5 または B1:B10" />
+                                        <small class="text-muted">範囲の場合、数式を選択してください</small>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small mb-1">数式</label>
+                                        <select @bind="cellMappings[index].Sheet2Formula" class="form-select form-select-sm">
+                                            <option value="@FormulaType.None">なし（セル値）</option>
+                                            <option value="@FormulaType.Max">最大値（MAX）</option>
+                                            <option value="@FormulaType.Min">最小値（MIN）</option>
+                                            <option value="@FormulaType.Average">平均値（AVERAGE）</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 数値比較設定 -->
+                    <div class="row g-2 mt-2">
+                        <div class="col-md-6">
+                            <div class="border-start border-warning border-3 ps-2">
+                                <label class="form-label small mb-1 text-warning"><strong>数値比較設定</strong></label>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label class="form-label small mb-1">小数点以下桁数</label>
+                                        <input type="number" @bind="cellMappings[index].DecimalPlaces"
+                                               class="form-control form-control-sm"
+                                               min="0" max="10" />
+                                        <small class="text-muted">0～10桁</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small mb-1">許容誤差（±）</label>
+                                        <input type="number" @bind="cellMappings[index].Tolerance"
+                                               class="form-control form-control-sm"
+                                               step="0.0001" min="0" />
+                                        <small class="text-muted">例: 0.01</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-2">
+                        <div class="col-12 text-end">
+                            <button type="button" class="btn btn-danger btn-sm" @onclick="() => RemoveMapping(index)">
+                                <i class="fas fa-trash"></i> この項目を削除
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
         </div>
     }
+    </div>
 
     <div class="d-flex gap-2 mt-3">
         <button type="button" class="btn btn-success" @onclick="AddMapping">
             <i class="fas fa-plus"></i> 対応セルを追加
+        </button>
+        <button type="button" class="btn btn-outline-secondary" @onclick="ExpandAll" disabled="@(cellMappings.Count == 0)">
+            <i class="fas fa-expand"></i> すべて展開
+        </button>
+        <button type="button" class="btn btn-outline-secondary" @onclick="CollapseAll" disabled="@(cellMappings.Count == 0)">
+            <i class="fas fa-compress"></i> すべて折りたたむ
+        </button>
+        <button type="button" class="btn btn-outline-warning" @onclick="ShowBulkRename" disabled="@(cellMappings.Count == 0)">
+            <i class="fas fa-exchange-alt"></i> 一括変換
         </button>
         <button type="button" class="btn btn-secondary" @onclick="ClearMappings">
             <i class="fas fa-eraser"></i>クリア
@@ -436,6 +646,35 @@
         </button>
     </div>
 </div>
+
+<!-- Enhanced Floating Toolbar (shown when items exist) -->
+@if (cellMappings.Count > 0)
+{
+    <div class="floating-toolbar">
+        <div class="btn-group-vertical" role="group">
+            <button type="button" class="btn btn-success" @onclick="AddMapping" title="対応セルを追加">
+                <i class="fas fa-plus"></i>
+            </button>
+            <button type="button" class="btn btn-info" @onclick="ExpandAll" title="すべて展開">
+                <i class="fas fa-expand"></i>
+            </button>
+            <button type="button" class="btn btn-info" @onclick="CollapseAll" title="すべて折りたたむ">
+                <i class="fas fa-compress"></i>
+            </button>
+            <div class="separator"></div>
+            <button type="button" class="btn btn-warning" @onclick="ShowBulkRename" title="一括変換">
+                <i class="fas fa-exchange-alt"></i>
+            </button>
+            <div class="separator"></div>
+            <button type="button" class="btn btn-primary" @onclick="ScrollToTop" title="最上段へジャンプ">
+                <i class="fas fa-arrow-up"></i>
+            </button>
+            <button type="button" class="btn btn-primary" @onclick="ScrollToBottom" title="最下段へジャンプ">
+                <i class="fas fa-arrow-down"></i>
+            </button>
+        </div>
+    </div>
+}
 
 @if (isLoading)
 {
@@ -573,19 +812,19 @@
             </div>
 
             <div class="help-section">
-                <h5><i class="fas fa-sliders-h"></i> 数値比較設定</h5>
-                <p>数値を比較する際の精度を設定できます：</p>
+                <h5><i class="fas fa-arrows-alt"></i> 項目の操作</h5>
+                <p>セル対応表の項目を効率的に操作できます：</p>
                 <ul>
-                    <li><strong>小数点以下桁数:</strong> 表示・比較する小数点桁数（0～10桁）</li>
-                    <li><strong>許容誤差（±）:</strong> この範囲内なら一致とみなす（例: 0.01なら±0.01の誤差を許容）</li>
+                    <li><strong>ドラッグ＆ドロップ:</strong> 左端のハンドル（≡）をドラッグして項目の順序を変更</li>
+                    <li><strong>展開/折りたたみ:</strong> 右端の▼/▲ボタンで詳細フォームを表示/非表示</li>
+                    <li><strong>すべて展開/折りたたむ:</strong> 一括で全項目を展開または折りたたむ</li>
+                    <li><strong>一括変換:</strong> ブック名やシート名を一括で置き換え（アップロード済みファイルから選択）</li>
+                    <li><strong>フローティングボタン:</strong> 画面右下の⬆️/⬇️ボタンでリストの先頭/末尾にジャンプ</li>
                 </ul>
                 <div class="help-example">
                     <strong>例：</strong><br />
-                    <strong>小数点桁数:</strong> 2<br />
-                    <strong>許容誤差:</strong> 0.01<br />
-                    → 値1: 1.234 → 1.23<br />
-                    → 値2: 1.244 → 1.24<br />
-                    → 差: 0.01 ≦ 許容誤差 → 一致
+                    <strong>項目の追加:</strong> 「対応セルを追加」ボタンをクリック<br />
+                    <strong>項目の削除:</strong> 不要な項目の「この項目を削除」ボタンをクリック
                 </div>
             </div>
 
@@ -686,6 +925,195 @@
             <div class="text-center mt-4">
                 <button type="button" class="btn btn-primary" @onclick="HideHelp">
                     <i class="fas fa-check"></i> 閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 一括変換モーダル -->
+<div class="help-modal @(showBulkRename ? "show" : "")" @onclick="HideBulkRename">
+    <div class="help-modal-content" @onclick:stopPropagation="true">
+        <div class="help-modal-header">
+            <h4 class="mb-0"><i class="fas fa-exchange-alt"></i> ブック名・シート名の一括変換</h4>
+            <button type="button" class="help-close" @onclick="HideBulkRename">&times;</button>
+        </div>
+        <div class="help-modal-body">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> 
+                <strong>一括変換機能:</strong> 
+                現在のセル対応表内のブック名やシート名を一括で置き換えます。
+            </div>
+
+            <!-- 変換モード選択 -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">変換対象</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="renameMode" id="modeBook1" value="1" @onchange="@(() => renameMode = 1)" checked="@(renameMode == 1)">
+                    <label class="form-check-label" for="modeBook1">
+                        ブック1のファイル名のみ
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="renameMode" id="modeBook2" value="2" @onchange="@(() => renameMode = 2)" checked="@(renameMode == 2)">
+                    <label class="form-check-label" for="modeBook2">
+                        ブック2のファイル名のみ
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="renameMode" id="modeSheet1" value="3" @onchange="@(() => renameMode = 3)" checked="@(renameMode == 3)">
+                    <label class="form-check-label" for="modeSheet1">
+                        ブック1のシート名のみ
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="renameMode" id="modeSheet2" value="4" @onchange="@(() => renameMode = 4)" checked="@(renameMode == 4)">
+                    <label class="form-check-label" for="modeSheet2">
+                        ブック2のシート名のみ
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="renameMode" id="modeBoth" value="5" @onchange="@(() => renameMode = 5)" checked="@(renameMode == 5)">
+                    <label class="form-check-label" for="modeBoth">
+                        ブック1とブック2のファイル名の両方
+                    </label>
+                </div>
+            </div>
+
+            <!-- ブック名変換 -->
+            @if (renameMode == 1 || renameMode == 2 || renameMode == 5)
+            {
+                <div class="mb-3">
+                    <h5 class="text-primary">
+                        <i class="fas fa-book"></i> 
+                        @if (renameMode == 1) { <text>ブック1のファイル名を変換</text> }
+                        else if (renameMode == 2) { <text>ブック2のファイル名を変換</text> }
+                        else { <text>ファイル名の変換</text> }
+                    </h5>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label">変換元のファイル名</label>
+                            <select @bind="sourceBookName" class="form-select">
+                                <option value="">-- 選択してください --</option>
+                                @foreach (var bookName in GetUniqueBookNames(renameMode))
+                                {
+                                    <option value="@bookName">@bookName</option>
+                                }
+                            </select>
+                            <small class="text-muted">
+                                @if (renameMode == 1) { <text>ブック1のファイル名から候補を表示</text> }
+                                else if (renameMode == 2) { <text>ブック2のファイル名から候補を表示</text> }
+                                else { <text>現在のテンプレートから候補を表示</text> }
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">変換先のファイル名</label>
+                            <select @bind="targetBookName" class="form-select">
+                                <option value="">-- 選択してください --</option>
+                                @foreach (var book in uploadedBooks)
+                                {
+                                    <option value="@book.FileName">@book.FileName</option>
+                                }
+                            </select>
+                            <small class="text-muted">アップロード済みファイルから選択</small>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- シート名変換 -->
+            @if (renameMode == 3 || renameMode == 4)
+            {
+                <div class="mb-3">
+                    <h5 class="text-success">
+                        <i class="fas fa-file-alt"></i> 
+                        @if (renameMode == 3) { <text>ブック1のシート名を変換</text> }
+                        else { <text>ブック2のシート名を変換</text> }
+                    </h5>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label">変換元のシート名</label>
+                            <select @bind="sourceSheetName" class="form-select">
+                                <option value="">-- 選択してください --</option>
+                                @foreach (var sheetName in GetUniqueSheetNames(renameMode))
+                                {
+                                    <option value="@sheetName">@sheetName</option>
+                                }
+                            </select>
+                            <small class="text-muted">
+                                @if (renameMode == 3) { <text>ブック1のシート名から候補を表示</text> }
+                                else { <text>ブック2のシート名から候補を表示</text> }
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">変換先のシート名</label>
+                            <input type="text" @bind="targetSheetName" class="form-control" placeholder="新しいシート名を入力" list="@($"available-sheets-{renameMode}")" />
+                            <datalist id="@($"available-sheets-{renameMode}")">
+                                @if (uploadedBooks.Any())
+                                {
+                                    @if (!string.IsNullOrEmpty(targetBookName))
+                                    {
+                                        var targetBook = uploadedBooks.FirstOrDefault(b => b.FileName == targetBookName);
+                                        if (targetBook != null)
+                                        {
+                                            @foreach (var sheet in targetBook.Workbook.Worksheets)
+                                            {
+                                                <option value="@sheet.Name">@sheet.Name</option>
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        @* ブック名未選択の場合は全ブックのシート名を表示 *@
+                                        var allSheets = new HashSet<string>();
+                                        @foreach (var book in uploadedBooks)
+                                        {
+                                            @foreach (var sheet in book.Workbook.Worksheets)
+                                            {
+                                                allSheets.Add(sheet.Name);
+                                            }
+                                        }
+                                        @foreach (var sheetName in allSheets.OrderBy(s => s))
+                                        {
+                                            <option value="@sheetName">@sheetName</option>
+                                        }
+                                    }
+                                }
+                            </datalist>
+                            <small class="text-muted">手入力またはアップロード済みシートから選択</small>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- プレビュー -->
+            @if (!string.IsNullOrEmpty(sourceBookName) || !string.IsNullOrEmpty(sourceSheetName))
+            {
+                var affectedCount = cellMappings.Count(m => 
+                    (renameMode == 1 && m.Book1FileName == sourceBookName) ||
+                    (renameMode == 2 && m.Book2FileName == sourceBookName) ||
+                    (renameMode == 3 && m.Sheet1Name == sourceSheetName) ||
+                    (renameMode == 4 && m.Sheet2Name == sourceSheetName) ||
+                    (renameMode == 5 && (m.Book1FileName == sourceBookName || m.Book2FileName == sourceBookName))
+                );
+
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>影響を受ける項目数: @affectedCount</strong>
+                </div>
+            }
+
+            <!-- アクションボタン -->
+            <div class="d-flex gap-2 justify-content-end">
+                <button type="button" class="btn btn-secondary" @onclick="HideBulkRename">
+                    <i class="fas fa-times"></i> キャンセル
+                </button>
+                <button type="button" class="btn btn-primary" @onclick="ApplyBulkRename"
+                        disabled="@(
+                            ((renameMode == 1 || renameMode == 2 || renameMode == 5) && (string.IsNullOrEmpty(sourceBookName) || string.IsNullOrEmpty(targetBookName))) ||
+                            ((renameMode == 3 || renameMode == 4) && (string.IsNullOrEmpty(sourceSheetName) || string.IsNullOrEmpty(targetSheetName)))
+                        )">
+                    <i class="fas fa-check"></i> 変換実行
                 </button>
             </div>
         </div>

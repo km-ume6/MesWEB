@@ -62,14 +62,32 @@ public partial class ExcelCompare
     {
         try
         {
-            // 上書き条件: 既存テンプレートが選択されている場合は上書き優先
-            if (selectedTemplateId > 0)
+            var inputName = newTemplateName?.Trim();
+            
+            // 入力された名前が既存テンプレートと一致するか確認
+            var existingTemplate = !string.IsNullOrWhiteSpace(inputName)
+                ? savedTemplates.FirstOrDefault(t => t.TemplateName.Equals(inputName, StringComparison.OrdinalIgnoreCase))
+                : null;
+
+            // 上書き条件:
+            // 1. テンプレートが選択されていて、名前が未入力または既存名と一致
+            // 2. 入力された名前が既存テンプレートと一致
+            if (existingTemplate != null)
             {
+                // 既存テンプレート名を入力した場合、そのテンプレートを上書き
+                selectedTemplateId = existingTemplate.TemplateId;
+                await UpdateTemplate();
+                return;
+            }
+            else if (selectedTemplateId > 0 && string.IsNullOrWhiteSpace(inputName))
+            {
+                // テンプレート選択中で名前未入力の場合、選択中のテンプレートを上書き
                 await UpdateTemplate();
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(newTemplateName))
+            // 新規保存
+            if (string.IsNullOrWhiteSpace(inputName))
             {
                 templateMessage = "テンプレート名を入力してください";
                 return;
@@ -77,7 +95,7 @@ public partial class ExcelCompare
 
             var template = new CellMappingTemplate
             {
-                TemplateName = newTemplateName.Trim(),
+                TemplateName = inputName,
                 Description = newTemplateDescription?.Trim(),
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -111,13 +129,15 @@ public partial class ExcelCompare
             db.CellMappingTemplates.Add(template);
             await db.SaveChangesAsync();
 
-            Logger.LogInformation($"テンプレート「{newTemplateName}」を新規保存しました（ID: {template.TemplateId}, Items: {template.MappingItems.Count}）");
-            templateMessage = $"テンプレート「{newTemplateName}」を保存しました（{template.MappingItems.Count}項目）";
+            Logger.LogInformation($"テンプレート「{inputName}」を新規保存しました（ID: {template.TemplateId}, Items: {template.MappingItems.Count}）");
+            templateMessage = $"テンプレート「{inputName}」を保存しました（{template.MappingItems.Count}項目）";
+            
+            // 新規保存後は選択状態をクリア
+            selectedTemplateId = 0;
             newTemplateName = string.Empty;
             newTemplateDescription = string.Empty;
 
             await LoadSavedTemplates();
-
             await InvokeAsync(StateHasChanged);
         }
         catch (Exception ex)
@@ -249,7 +269,9 @@ public partial class ExcelCompare
             }
 
             cellMappings.Clear();
+            expandedMappings.Clear(); // 展開状態をクリア
 
+            var itemIndex = 0;
             foreach (var item in template.MappingItems.OrderBy(i => i.SortOrder))
             {
                 var sheet1Parts = item.Sheet1Name?.Split(':') ?? Array.Empty<string>();
@@ -271,6 +293,8 @@ public partial class ExcelCompare
                 };
 
                 cellMappings.Add(mapping);
+                expandedMappings.Add(itemIndex); // デフォルトで展開状態にする
+                itemIndex++;
             }
 
             UpdateAllBookIndices();

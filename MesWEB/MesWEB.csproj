@@ -21,6 +21,7 @@
     <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="ExcelDataReader" Version="3.8.0" />
     <PackageReference Include="ExcelDataReader.DataSet" Version="3.8.0" />
+    <PackageReference Include="Markdig" Version="0.44.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.10">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
@@ -36,6 +37,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Data\Migrations\" />
     <Folder Include="Services\" />
   </ItemGroup>
 
@@ -60,11 +62,9 @@
 
     <MakeDir Directories="$(NetworkSharePath)" Condition="!Exists('$(NetworkSharePath)')" />
 
-    <Copy SourceFiles="@(WebPackages)" 
-          DestinationFolder="$(NetworkSharePath)" 
-          SkipUnchangedFiles="false" Condition="'@(WebPackages)' != ''" />
+    <Copy SourceFiles="@(WebPackages)" DestinationFolder="$(NetworkSharePath)" SkipUnchangedFiles="false" Condition="'@(WebPackages)' != ''" />
 
-    <Message Text="@(WebPackages->Count()) パッケージをコピーしました: $(NetworkSharePath)" Importance="high" Condition="'@(WebPackages)' != ''" />
+    <Message Text="@(WebPackages-&gt;Count()) パッケージをコピーしました: $(NetworkSharePath)" Importance="high" Condition="'@(WebPackages)' != ''" />
     <Message Text="パッケージが見つかりませんでした。Package ターゲットの出力先や構成（Debug/Release）を確認してください。" Importance="high" Condition="'@(WebPackages)' == ''" />
     <Message Text="==========================================" Importance="high" />
   </Target>

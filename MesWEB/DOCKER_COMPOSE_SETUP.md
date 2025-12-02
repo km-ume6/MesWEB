@@ -1,63 +1,63 @@
-# Crystal Growth Notebook 2 - Docker Compose ƒZƒbƒgƒAƒbƒv
+# Crystal Growth Notebook 2 - Docker Compose ã‚»ãƒƒãƒˆã‚¢ãƒƒãƒ—
 
-## ŠT—v
+## æ¦‚è¦
 
-‚±‚ÌƒKƒCƒh‚Å‚ÍA**SQL Server ‚Æ Blazor ƒAƒvƒŠƒP[ƒVƒ‡ƒ“‚Ì—¼•û‚ğƒRƒ“ƒeƒi‚ÅÀs**‚·‚é•û–@‚ğà–¾‚µ‚Ü‚·B
+ã“ã®ã‚¬ã‚¤ãƒ‰ã§ã¯ã€**SQL Server ã¨ Blazor ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã®ä¸¡æ–¹ã‚’ã‚³ãƒ³ãƒ†ãƒŠã§å®Ÿè¡Œ**ã™ã‚‹æ–¹æ³•ã‚’èª¬æ˜ã—ã¾ã™ã€‚
 
-SQL Server‚Ìƒf[ƒ^‚Í **`D:\MSSQL\Data`** ‚É•Û‘¶‚³‚ê‚Ü‚·B
+SQL Serverã®ãƒ‡ãƒ¼ã‚¿ã¯ **`D:\MSSQL\Data`** ã«ä¿å­˜ã•ã‚Œã¾ã™ã€‚
 
-## ‘O’ñğŒ
+## å‰ææ¡ä»¶
 
-- **Docker Desktop** ‚Ü‚½‚Í **Rancher Desktop** ‚ªƒCƒ“ƒXƒg[ƒ‹‚³‚ê‚Ä‚¢‚é‚±‚Æ
-- **.NET 9 SDK** ‚ªƒCƒ“ƒXƒg[ƒ‹‚³‚ê‚Ä‚¢‚é‚±‚Æiƒrƒ‹ƒh—pj
-- **Dƒhƒ‰ƒCƒu**‚ª—˜—p‰Â”\‚Å‚ ‚é‚±‚Æ
+- **Docker Desktop** ã¾ãŸã¯ **Rancher Desktop** ãŒã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«ã•ã‚Œã¦ã„ã‚‹ã“ã¨
+- **.NET 9 SDK** ãŒã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«ã•ã‚Œã¦ã„ã‚‹ã“ã¨ï¼ˆãƒ“ãƒ«ãƒ‰ç”¨ï¼‰
+- **Dãƒ‰ãƒ©ã‚¤ãƒ–**ãŒåˆ©ç”¨å¯èƒ½ã§ã‚ã‚‹ã“ã¨
 
-## ƒA[ƒLƒeƒNƒ`ƒƒ
+## ã‚¢ãƒ¼ã‚­ãƒ†ã‚¯ãƒãƒ£
 
 ```
-„¡„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„¢
-„    Docker Compose               „ 
-„   „ 
-„   „¡„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„¢  „ 
-„   „   crystalgrowthnotebook2      „   „ 
-„   „   (Blazor App)    „   „ 
-„   „   Port: 8080                  „   „ 
-„   „¤„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„£  „ 
-„     «   „ 
-„   „¡„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„¢  „ 
-„   „ sqlserver    „ „ 
-„   „   (SQL Server 2022)           „   „ 
-„   „   Port: 1433      „   „ 
-„   „   Data: D:\MSSQL\Data ©ƒzƒXƒg„   „ 
-„   „¤„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„£  „ 
-„¤„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„Ÿ„£
-              «
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚   Docker Compose               â”‚
+â”‚                                â”‚
+â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”‚
+â”‚  â”‚  crystalgrowthnotebook2      â”‚  â”‚
+â”‚  â”‚  (Blazor App)    â”‚  â”‚
+â”‚  â”‚  Port: 8080                  â”‚  â”‚
+â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â”‚
+â”‚    â†“   â†“
+â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”‚
+â”‚  â”‚  sqlserver    â”‚
+â”‚  â”‚  (SQL Server 2022)           â”‚  â”‚
+â”‚  â”‚  Port: 1433      â”‚  â”‚
+â”‚  â”‚  Data: D:\MSSQL\Data â†ãƒ›ã‚¹ãƒˆâ”‚  â”‚
+â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+              â†“
         D:\MSSQL\Data
-     (ƒzƒXƒg‚ÌƒfƒBƒXƒN)
+     (ãƒ›ã‚¹ãƒˆã®ãƒ‡ã‚£ã‚¹ã‚¯)
 ```
 
-## ƒNƒCƒbƒNƒXƒ^[ƒg
+## ã‚¯ã‚¤ãƒƒã‚¯ã‚¹ã‚¿ãƒ¼ãƒˆ
 
-### 1. ƒf[ƒ^ƒfƒBƒŒƒNƒgƒŠ‚Ì€”õi‰‰ñ‚Ì‚İj
+### 1. ãƒ‡ãƒ¼ã‚¿ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã®æº–å‚™ï¼ˆåˆå›ã®ã¿ï¼‰
 
-**©“®ì¬i„§j:**
+**è‡ªå‹•ä½œæˆï¼ˆæ¨å¥¨ï¼‰:**
 
-`run-compose.bat` ‚ğÀs‚·‚é‚Æ©“®“I‚É `D:\MSSQL\Data` ‚ªì¬‚³‚ê‚Ü‚·B
+`run-compose.bat` ã‚’å®Ÿè¡Œã™ã‚‹ã¨è‡ªå‹•çš„ã« `D:\MSSQL\Data` ã‚’ä½œæˆã—ã¾ã™ã€‚
 
-**è“®ì¬:**
+**æ‰‹å‹•ä½œæˆ:**
 
 ```cmd
 mkdir D:\MSSQL\Data
 ```
 
-### 2. ƒRƒ“ƒeƒi‚ğ‹N“®
+### 2. ã‚³ãƒ³ãƒ†ãƒŠã‚’èµ·å‹•
 
 ```cmd
 cd CrystalGrowthNotebook2
 .\run-compose.bat
 ```
 
-‚Ü‚½‚Í Linux/Mac:
+ã¾ãŸã¯ Linux/Mac:
 
 ```bash
 cd CrystalGrowthNotebook2
@@ -65,51 +65,51 @@ chmod +x run-compose.sh
 ./run-compose.sh
 ```
 
-### 3. ƒAƒNƒZƒX
+### 3. ã‚¢ã‚¯ã‚»ã‚¹
 
-- **ƒAƒvƒŠƒP[ƒVƒ‡ƒ“**: http://localhost:8080
+- **ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³**: http://localhost:8080
 - **SQL Server**: localhost:1433
 
-### 4. ’â~
+### 4. åœæ­¢
 
 ```cmd
 .\stop-compose.bat
 ```
 
-‚Ü‚½‚Í:
+ã¾ãŸã¯:
 
 ```bash
 docker-compose down
 ```
 
-## Ú×İ’è
+## è©³ç´°è¨­å®š
 
 ### SQL Server
 
-**ƒfƒtƒHƒ‹ƒgİ’è:**
+**ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆè¨­å®š:**
 - **Image**: mcr.microsoft.com/mssql/server:2022-latest
 - **SA Password**: `YourStrong!Passw0rd123`
-- **Database**: `CGNotes`i©“®ì¬j
+- **Database**: `CGNotes`ï¼ˆåˆå›ä½œæˆï¼‰
 - **Port**: 1433
-- **Data Location**: `D:\MSSQL\Data`iƒzƒXƒg‚ÌƒfƒBƒXƒNj
+- **Data Location**: `D:\MSSQL\Data`ï¼ˆãƒ›ã‚¹ãƒˆã®ãƒ‡ã‚£ã‚¹ã‚¯ï¼‰
 
-**ƒf[ƒ^‚Ì•Û‘¶êŠ:**
+**ãƒ‡ãƒ¼ã‚¿ã®ä¿å­˜å ´æ‰€:**
 
-| OS | ƒpƒX |
+| OS | ãƒ‘ã‚¹ |
 |----|------|
 | **Windows** | `D:\MSSQL\Data` |
 | **WSL2** | `/mnt/d/MSSQL/Data` |
-| **Linux/Mac** | Docker Volume‚ğg—pi—v•ÏXj |
+| **Linux/Mac** | Docker Volumeã‚’ä½¿ç”¨ï¼ˆè¦å¤‰æ›´ï¼‰ |
 
-**ƒpƒXƒ[ƒh‚ğ•ÏX‚·‚éê‡:**
+**ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ã‚’å¤‰æ›´ã™ã‚‹å ´åˆ:**
 
-1. `docker-compose.yml` ‚ğ•ÒWF
+1. `docker-compose.yml` ã‚’ç·¨é›†ï¼š
    ```yaml
    environment:
      - MSSQL_SA_PASSWORD=YourNewPassword
    ```
 
-2. `appsettings.Container.json` ‚ğ•ÒWF
+2. `appsettings.Container.json` ã‚’ç·¨é›†ï¼š
    ```json
    {
      "ConnectionStrings": {
@@ -118,275 +118,275 @@ docker-compose down
    }
    ```
 
-**ƒf[ƒ^‚Ì•Û‘¶êŠ‚ğ•ÏX‚·‚éê‡:**
+**ãƒ‡ãƒ¼ã‚¿ã®ä¿å­˜å ´æ‰€ã‚’å¤‰æ›´ã™ã‚‹å ´åˆ:**
 
-`docker-compose.yml` ‚ğ•ÒWF
+`docker-compose.yml` ã‚’ç·¨é›†ï¼š
 
 ```yaml
 volumes:
-  # •Ê‚ÌƒpƒX‚É•ÏX
+  # åˆ¥ã®ãƒ‘ã‚¹ã«å¤‰æ›´
   - E:/SQLData:/var/opt/mssql
 ```
 
-### ƒAƒvƒŠƒP[ƒVƒ‡ƒ“
+### ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³
 
-**İ’èƒtƒ@ƒCƒ‹:**
-- ƒRƒ“ƒeƒiÀs‚Í `appsettings.Container.json` ‚ªg—p‚³‚ê‚Ü‚·
-- ƒT[ƒo[–¼‚Í `sqlserver`iDocker Compose‚ÌƒT[ƒrƒX–¼j
+**è¨­å®šãƒ•ã‚¡ã‚¤ãƒ«:**
+- ã‚³ãƒ³ãƒ†ãƒŠå®Ÿè¡Œæ™‚ã¯ `appsettings.Container.json` ã‚’ä½¿ç”¨ã—ã¾ã™
+- ã‚µãƒ¼ãƒãƒ¼åã¯ `sqlserver`ï¼ˆDocker Composeã®ã‚µãƒ¼ãƒ“ã‚¹åï¼‰
 
-## ƒf[ƒ^‚ÌŠÇ—
+## ãƒ‡ãƒ¼ã‚¿ã®ç®¡ç†
 
-### ƒf[ƒ^‚Ì‰i‘±‰»
+### ãƒ‡ãƒ¼ã‚¿ã®æ°¸ç¶šåŒ–
 
-SQL Server‚Ìƒf[ƒ^‚Í **ƒzƒXƒg‚Ì `D:\MSSQL\Data`** ‚É•Û‘¶‚³‚ê‚é‚½‚ßF
+SQL Serverã®ãƒ‡ãƒ¼ã‚¿ã¯ **ãƒ›ã‚¹ãƒˆã® `D:\MSSQL\Data`** ã«ä¿å­˜ã•ã‚Œã‚‹ãŸã‚ï¼š
 
-- ? **ƒRƒ“ƒeƒi‚ğíœ‚µ‚Ä‚àƒf[ƒ^‚Íc‚é**
-- ? **’¼Úƒtƒ@ƒCƒ‹‚ÉƒAƒNƒZƒX‰Â”\**
-- ? **ƒoƒbƒNƒAƒbƒv‚ªŠÈ’P**
-- ? **ƒfƒBƒXƒN—e—Ê‚ÌŠÇ—‚ª—eˆÕ**
+- âœ… **ã‚³ãƒ³ãƒ†ãƒŠã‚’å‰Šé™¤ã—ã¦ã‚‚ãƒ‡ãƒ¼ã‚¿ã¯æ®‹ã‚‹**
+- âœ… **ç›´æ¥ãƒ•ã‚¡ã‚¤ãƒ«ã«ã‚¢ã‚¯ã‚»ã‚¹å¯èƒ½**
+- âœ… **ãƒãƒƒã‚¯ã‚¢ãƒƒãƒ—ãŒç°¡å˜**
+- âœ… **ãƒ‡ã‚£ã‚¹ã‚¯å®¹é‡ã®ç®¡ç†ãŒå®¹æ˜“**
 
-### ƒf[ƒ^‚ÌŠm”F
+### ãƒ‡ãƒ¼ã‚¿ã®ç¢ºèª
 
 ```cmd
 dir D:\MSSQL\Data
 ```
 
-ˆÈ‰º‚Ì‚æ‚¤‚Èƒtƒ@ƒCƒ‹‚ªì¬‚³‚ê‚Ü‚·F
+ä»¥ä¸‹ã®ã‚ˆã†ãªãƒ•ã‚¡ã‚¤ãƒ«ãŒä½œæˆã•ã‚Œã¾ã™ï¼š
 
 ```
 D:\MSSQL\Data
-„¥„Ÿ„Ÿ master.mdf
-„¥„Ÿ„Ÿ mastlog.ldf
-„¥„Ÿ„Ÿ model.mdf
-„¥„Ÿ„Ÿ modellog.ldf
-„¥„Ÿ„Ÿ msdbdata.mdf
-„¥„Ÿ„Ÿ msdblog.ldf
-„¥„Ÿ„Ÿ tempdb.mdf
-„¥„Ÿ„Ÿ templog.ldf
-„¥„Ÿ„Ÿ CGNotes.mdf    © ƒAƒvƒŠƒP[ƒVƒ‡ƒ“‚Ìƒf[ƒ^ƒx[ƒX
-„¤„Ÿ„Ÿ CGNotes_log.ldf
+â”œâ”€â”€ master.mdf
+â”œâ”€â”€ mastlog.ldf
+â”œâ”€â”€ model.mdf
+â”œâ”€â”€ modellog.ldf
+â”œâ”€â”€ msdbdata.mdf
+â”œâ”€â”€ msdblog.ldf
+â”œâ”€â”€ tempdb.mdf
+â”œâ”€â”€ templog.ldf
+â”œâ”€â”€ CGNotes.mdf    â† ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã®ãƒ‡ãƒ¼ã‚¿ãƒ™ãƒ¼ã‚¹
+â””â”€â”€ CGNotes_log.ldf
 ```
 
-### ƒf[ƒ^‚ÌƒoƒbƒNƒAƒbƒv
+### ãƒ‡ãƒ¼ã‚¿ã®ãƒãƒƒã‚¯ã‚¢ãƒƒãƒ—
 
-**•û–@1: ƒtƒ@ƒCƒ‹ƒRƒs[iŠÈ’Pj**
+**æ–¹æ³•1: ãƒ•ã‚¡ã‚¤ãƒ«ã‚³ãƒ”ãƒ¼ï¼ˆç°¡å˜ï¼‰**
 
 ```cmd
-# ƒRƒ“ƒeƒi‚ğ’â~
+# ã‚³ãƒ³ãƒ†ãƒŠåœæ­¢
 docker-compose stop sqlserver
 
-# ƒtƒHƒ‹ƒ_‚²‚ÆƒRƒs[
+# ãƒ•ã‚©ãƒ«ãƒ€ã”ã¨ã‚³ãƒ”ãƒ¼
 xcopy D:\MSSQL\Data D:\Backup\MSSQL\Data_%date:~0,4%%date:~5,2%%date:~8,2% /E /I
 
-# ƒRƒ“ƒeƒi‚ğÄ‹N“®
+# ã‚³ãƒ³ãƒ†ãƒŠå†èµ·å‹•
 docker-compose start sqlserver
 ```
 
-**•û–@2: SQL ServerƒoƒbƒNƒAƒbƒvi„§j**
+**æ–¹æ³•2: SQL Serverãƒãƒƒã‚¯ã‚¢ãƒƒãƒ—ï¼ˆæ¨å¥¨ï¼‰**
 
 ```bash
-# ƒRƒ“ƒeƒi“à‚ÅƒoƒbƒNƒAƒbƒv
+# ã‚³ãƒ³ãƒ†ãƒŠå†…ã§ãƒãƒƒã‚¯ã‚¢ãƒƒãƒ—
 docker exec crystalgrowth-sqlserver /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong!Passw0rd123 -Q "BACKUP DATABASE CGNotes TO DISK='/var/opt/mssql/CGNotes_backup.bak' WITH FORMAT" -C
 
-# ƒoƒbƒNƒAƒbƒvƒtƒ@ƒCƒ‹‚ÍD:\MSSQL\Data‚Éì¬‚³‚ê‚é
+# ãƒãƒƒã‚¯ã‚¢ãƒƒãƒ—ãƒ•ã‚¡ã‚¤ãƒ«ãŒD:\MSSQL\Dataã«ä½œæˆã•ã‚Œã‚‹
 dir D:\MSSQL\Data\*.bak
 ```
 
-### ƒf[ƒ^‚ÌƒŠƒXƒgƒA
+### ãƒ‡ãƒ¼ã‚¿ã®ãƒªã‚¹ãƒˆã‚¢
 
 ```bash
-# ƒoƒbƒNƒAƒbƒvƒtƒ@ƒCƒ‹‚ªD:\MSSQL\Data‚É‚ ‚éê‡
+# ãƒãƒƒã‚¯ã‚¢ãƒƒãƒ—ãƒ•ã‚¡ã‚¤ãƒ«ãŒD:\MSSQL\Dataã«ã‚ã‚‹å ´åˆ
 docker exec crystalgrowth-sqlserver /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong!Passw0rd123 -Q "RESTORE DATABASE CGNotes FROM DISK='/var/opt/mssql/CGNotes_backup.bak' WITH REPLACE" -C
 ```
 
-### ƒf[ƒ^‚ÌƒNƒŠ[ƒ“ƒAƒbƒv
+### ãƒ‡ãƒ¼ã‚¿ã®ã‚¯ãƒªãƒ¼ãƒ³ã‚¢ãƒƒãƒ—
 
-**Š®‘Síœiƒf[ƒ^ƒx[ƒX‚àíœj:**
+**å®Œå…¨å‰Šé™¤ï¼ˆãƒ‡ãƒ¼ã‚¿ãƒ™ãƒ¼ã‚¹ã‚’å‰Šé™¤ï¼‰:**
 
 ```cmd
-# ƒRƒ“ƒeƒi‚ğ’â~Eíœ
+# ã‚³ãƒ³ãƒ†ãƒŠåœæ­¢ãƒ»å‰Šé™¤
 docker-compose down
 
-# ƒf[ƒ^ƒtƒHƒ‹ƒ_‚ğíœ
+# ãƒ‡ãƒ¼ã‚¿ãƒ•ã‚©ãƒ«ãƒ€å‰Šé™¤
 rmdir /S /Q D:\MSSQL\Data
 
-# Ä“x‹N“®‚·‚é‚ÆV‚µ‚¢ƒf[ƒ^ƒx[ƒX‚ªì¬‚³‚ê‚é
+# å†åº¦èµ·å‹•ã™ã‚‹ã¨æ–°è¦ãƒ‡ãƒ¼ã‚¿ãƒ™ãƒ¼ã‚¹ãŒä½œæˆã•ã‚Œã‚‹
 .\run-compose.bat
 ```
 
-## ƒRƒ}ƒ“ƒhˆê——
+## ã‚³ãƒãƒ³ãƒ‰ä¸€è¦§
 
-### ‹N“®E’â~
+### èµ·å‹•ãƒ»åœæ­¢
 
 ```bash
-# ‚·‚×‚Ä‚ÌƒRƒ“ƒeƒi‚ğ‹N“®
+# ã™ã¹ã¦ã®ã‚³ãƒ³ãƒ†ãƒŠã‚’èµ·å‹•
 docker-compose up -d
 
-# ‚·‚×‚Ä‚ÌƒRƒ“ƒeƒi‚ğ’â~
+# ã™ã¹ã¦ã®ã‚³ãƒ³ãƒ†ãƒŠã‚’åœæ­¢
 docker-compose stop
 
-# ‚·‚×‚Ä‚ÌƒRƒ“ƒeƒi‚ğ’â~‚µ‚Äíœiƒf[ƒ^‚Íc‚éj
+# ã™ã¹ã¦ã®ã‚³ãƒ³ãƒ†ãƒŠã‚’åœæ­¢ã—ã¦å‰Šé™¤ï¼ˆãƒ‡ãƒ¼ã‚¿ã¯æ®‹ã‚‹ï¼‰
 docker-compose down
 ```
 
-### ƒƒOŠm”F
+### ãƒ­ã‚°ç¢ºèª
 
 ```bash
-# ‚·‚×‚Ä‚ÌƒƒO‚ğ•\¦
+# ã™ã¹ã¦ã®ãƒ­ã‚°ã‚’è¡¨ç¤º
 docker-compose logs -f
 
-# SQL Server‚ÌƒƒO‚Ì‚İ
+# SQL Serverã®ãƒ­ã‚°ã®ã¿
 docker-compose logs -f sqlserver
 
-# ƒAƒvƒŠƒP[ƒVƒ‡ƒ“‚ÌƒƒO‚Ì‚İ
+# ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã®ãƒ­ã‚°ã®ã¿
 docker-compose logs -f crystalgrowthnotebook2
 ```
 
-### ƒRƒ“ƒeƒi‚Ìó‘ÔŠm”F
+### ã‚³ãƒ³ãƒ†ãƒŠã®çŠ¶æ…‹ç¢ºèª
 
 ```bash
-# Às’†‚ÌƒRƒ“ƒeƒi‚ğ•\¦
+# å®Ÿè¡Œä¸­ã®ã‚³ãƒ³ãƒ†ãƒŠã‚’è¡¨ç¤º
 docker-compose ps
 
-# ‚·‚×‚Ä‚ÌƒRƒ“ƒeƒi‚ğ•\¦
+# ã™ã¹ã¦ã®ã‚³ãƒ³ãƒ†ãƒŠã‚’è¡¨ç¤º
 docker-compose ps -a
 ```
 
-### SQL Server‚ÉÚ‘±
+### SQL Serverã«æ¥ç¶š
 
-#### Azure Data Studio ‚Ü‚½‚Í SQL Server Management Studio
+#### Azure Data Studio ã¾ãŸã¯ SQL Server Management Studio
 
 - **Server**: localhost,1433
 - **Authentication**: SQL Server Authentication
 - **User**: sa
 - **Password**: YourStrong!Passw0rd123
 
-#### ƒRƒ}ƒ“ƒhƒ‰ƒCƒ“isqlcmdj
+#### ã‚³ãƒãƒ³ãƒ‰ãƒ©ã‚¤ãƒ³ï¼ˆsqlcmdï¼‰
 
 ```bash
-# ƒRƒ“ƒeƒi“à‚ÅÀs
+# ã‚³ãƒ³ãƒ†ãƒŠå†…ã§å®Ÿè¡Œ
 docker exec -it crystalgrowth-sqlserver /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong!Passw0rd123 -C
 
-# ƒf[ƒ^ƒx[ƒXˆê——
+# ãƒ‡ãƒ¼ã‚¿ãƒ™ãƒ¼ã‚¹ä¸€è¦§
 SELECT name FROM sys.databases;
 GO
 
-# ƒe[ƒuƒ‹ˆê——
+# ãƒ†ãƒ¼ãƒ–ãƒ«ä¸€è¦§
 USE CGNotes;
 GO
 SELECT name FROM sys.tables;
 GO
 ```
 
-## ƒgƒ‰ƒuƒ‹ƒVƒ…[ƒeƒBƒ“ƒO
+## ãƒˆãƒ©ãƒ–ãƒ«ã‚·ãƒ¥ãƒ¼ãƒ†ã‚£ãƒ³ã‚°
 
-### D:\MSSQL\Data‚ªì¬‚Å‚«‚È‚¢
+### D:\MSSQL\DataãŒä½œæˆã§ããªã„
 
-**Œ ŒÀƒGƒ‰[:**
+**æ¨©é™ã‚¨ãƒ©ãƒ¼:**
 
 ```cmd
-# ŠÇ—Ò‚Æ‚µ‚ÄƒRƒ}ƒ“ƒhƒvƒƒ“ƒvƒg‚ğŠJ‚¢‚ÄÀs
+# ç®¡ç†è€…ã¨ã—ã¦ã‚³ãƒãƒ³ãƒ‰ãƒ—ãƒ­ãƒ³ãƒ—ãƒˆã‚’é–‹ã„ã¦å®Ÿè¡Œ
 mkdir D:\MSSQL\Data
 ```
 
-**Dƒhƒ‰ƒCƒu‚ª‘¶İ‚µ‚È‚¢:**
+**Dãƒ‰ãƒ©ã‚¤ãƒ–ãŒå­˜åœ¨ã—ãªã„:**
 
-•Ê‚Ìƒhƒ‰ƒCƒu‚ğg—p‚·‚éê‡A`docker-compose.yml` ‚ğ•ÒWF
+åˆ¥ã®ãƒ‰ãƒ©ã‚¤ãƒ–ã‚’ä½¿ç”¨ã™ã‚‹å ´åˆã€`docker-compose.yml` ã‚’ç·¨é›†ï¼š
 
 ```yaml
 volumes:
   - C:/MSSQL/Data:/var/opt/mssql
 ```
 
-### SQL ServerƒRƒ“ƒeƒi‚ª‹N“®‚µ‚È‚¢
+### SQL Serverã‚³ãƒ³ãƒ†ãƒŠãŒèµ·å‹•ã—ãªã„
 
-**ƒƒ‚ƒŠ•s‘«:**
-- SQL Server‚ÍÅ’á2GB‚Ìƒƒ‚ƒŠ‚ª•K—v‚Å‚·
-- Docker Desktop‚Ìİ’è‚Åƒƒ‚ƒŠ‚ğ‘‚â‚µ‚Ä‚­‚¾‚³‚¢
+**ãƒ¡ãƒ¢ãƒªä¸è¶³:**
+- SQL Serverã¯æœ€ä½2GBã®ãƒ¡ãƒ¢ãƒªãŒå¿…è¦ã§ã™
+- Docker Desktopã®è¨­å®šã§ãƒ¡ãƒ¢ãƒªã‚’å¢—ã‚„ã—ã¦ãã ã•ã„
 
-**ƒ|[ƒg‹£‡:**
+**ãƒãƒ¼ãƒˆç«¶åˆ:**
 ```bash
-# ƒ|[ƒg1433‚ªg—p’†‚©Šm”F
+# ãƒãƒ¼ãƒˆ1433ãŒä½¿ç”¨ä¸­ã‹ç¢ºèª
 netstat -ano | findstr :1433
 
-# g—p’†‚Ìê‡Adocker-compose.yml‚Åƒ|[ƒg‚ğ•ÏX
+# ä½¿ç”¨ä¸­ã®å ´åˆã€docker-compose.ymlã§ãƒãƒ¼ãƒˆã‚’å¤‰æ›´
 ports:
   - "1434:1433"
 ```
 
-**ƒf[ƒ^ƒtƒ@ƒCƒ‹‚ÌŒ ŒÀƒGƒ‰[:**
+**ãƒ‡ãƒ¼ã‚¿ãƒ•ã‚¡ã‚¤ãƒ«ã®æ¨©é™ã‚¨ãƒ©ãƒ¼:**
 
 ```cmd
-# D:\MSSQL\Data‚ÌŒ ŒÀ‚ğŠm”F
+# D:\MSSQL\Dataã®æ¨©é™ã‚’ç¢ºèª
 icacls D:\MSSQL\Data
 
-# •K—v‚É‰‚¶‚ÄŒ ŒÀ‚ğ•t—^
+# å¿…è¦ã«å¿œã˜ã¦æ¨©é™ã‚’ä»˜ä¸
 icacls D:\MSSQL\Data /grant Everyone:(OI)(CI)F
 ```
 
-### ƒAƒvƒŠƒP[ƒVƒ‡ƒ“‚ªSQL Server‚ÉÚ‘±‚Å‚«‚È‚¢
+### ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ãŒSQL Serverã«æ¥ç¶šã§ããªã„
 
-**ƒwƒ‹ƒXƒ`ƒFƒbƒNŠm”F:**
+**ãƒ˜ãƒ«ã‚¹ãƒã‚§ãƒƒã‚¯ç¢ºèª:**
 ```bash
 docker-compose ps
-# sqlserver ‚ª "healthy" ‚É‚È‚é‚Ü‚Å‘Ò‚Â
+# sqlserver ãŒ "healthy" ã«ãªã‚‹ã¾ã§å¾…ã¤
 ```
 
-**ƒlƒbƒgƒ[ƒNŠm”F:**
+**ãƒãƒƒãƒˆãƒ¯ãƒ¼ã‚¯ç¢ºèª:**
 ```bash
-# ƒlƒbƒgƒ[ƒNˆê——
+# ãƒãƒƒãƒˆãƒ¯ãƒ¼ã‚¯ä¸€è¦§
 docker network ls
 
-# ƒRƒ“ƒeƒi‚Ìƒlƒbƒgƒ[ƒNÚ‘±Šm”F
+# ã‚³ãƒ³ãƒ†ãƒŠã®ãƒãƒƒãƒˆãƒ¯ãƒ¼ã‚¯æ¥ç¶šã‚’ç¢ºèª
 docker network inspect crystalgrowthnotebook2_crystalgrowth-network
 ```
 
-**Ú‘±ƒeƒXƒg:**
+**æ¥ç¶šãƒ†ã‚¹ãƒˆ:**
 ```bash
-# ƒAƒvƒŠƒP[ƒVƒ‡ƒ“ƒRƒ“ƒeƒi‚©‚çSQL Server‚Éping
+# ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã‚³ãƒ³ãƒ†ãƒŠã‹ã‚‰SQL Serverã«ping
 docker exec crystalgrowthnotebook2 ping sqlserver
 ```
 
-### ƒf[ƒ^ƒx[ƒX‚ªì¬‚³‚ê‚È‚¢
+### ãƒ‡ãƒ¼ã‚¿ãƒ™ãƒ¼ã‚¹ãŒä½œæˆã•ã‚Œãªã„
 
-ƒ}ƒCƒOƒŒ[ƒVƒ‡ƒ“‚Í©“®Às‚³‚ê‚Ü‚·‚ªAè“®‚ÅŠm”FEÀs‚·‚éê‡F
+ãƒã‚¤ã‚°ãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ã¯è‡ªå‹•çš„ã«å®Ÿè¡Œã•ã‚Œã¾ã™ãŒã€æ‰‹å‹•ã§ç¢ºèªãƒ»å®Ÿè¡Œã™ã‚‹å ´åˆï¼š
 
 ```bash
-# ƒAƒvƒŠƒP[ƒVƒ‡ƒ“‚ÌƒƒO‚ğŠm”F
+# ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã®ãƒ­ã‚°ã‚’ç¢ºèª
 docker-compose logs crystalgrowthnotebook2
 
-# SQL Server‚É’¼ÚÚ‘±‚µ‚ÄŠm”F
+# SQL Serverã«ç›´æ¥æ¥ç¶šã—ã¦ç¢ºèª
 docker exec -it crystalgrowth-sqlserver /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong!Passw0rd123 -C
 
-# ƒf[ƒ^ƒx[ƒX‚ğè“®‚Åì¬
+# ãƒ‡ãƒ¼ã‚¿ãƒ™ãƒ¼ã‚¹ã‚’æ‰‹å‹•ã§ä½œæˆ
 CREATE DATABASE CGNotes;
 GO
 ```
 
-## LAN“à‚Ì‘¼‚ÌPC‚©‚çƒAƒNƒZƒX
+## LANå†…ã®ä»–ã®PCã‹ã‚‰ã‚¢ã‚¯ã‚»ã‚¹
 
-### ƒtƒ@ƒCƒAƒEƒH[ƒ‹İ’è
+### ãƒ•ã‚¡ã‚¤ã‚¢ã‚¦ã‚©ãƒ¼ãƒ«è¨­å®š
 
 ```cmd
 .\setup-firewall.bat
 ```
-iŠÇ—Ò‚Æ‚µ‚ÄÀsj
+ï¼ˆç®¡ç†è€…ã¨ã—ã¦å®Ÿè¡Œï¼‰
 
-### ƒAƒNƒZƒXURL
+### ã‚¢ã‚¯ã‚»ã‚¹URL
 
 ```
 http://192.168.11.23:8080
 ```
-iIPƒAƒhƒŒƒX‚ÍÀÛ‚Ì’l‚É’u‚«Š·‚¦j
+ï¼ˆIPã‚¢ãƒ‰ãƒ¬ã‚¹ã¯å®Ÿéš›ã®å€¤ã«ç½®ãæ›ãˆï¼‰
 
-## –{”ÔŠÂ‹«‚Å‚Ì„§İ’è
+## æœ¬ç•ªç’°å¢ƒã§ã®æ¨å¥¨è¨­å®š
 
-### ƒZƒLƒ…ƒŠƒeƒB
+### ã‚»ã‚­ãƒ¥ãƒªãƒ†ã‚£
 
-1. **SAƒpƒXƒ[ƒh‚ğ•ÏX**
-   - ‹­—Í‚ÈƒpƒXƒ[ƒh‚É•ÏX
+1. **SAãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ã‚’å¤‰æ›´**
+   - è¤‡é›‘ãªãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ã«å¤‰æ›´
 
-2. **ê—pƒ†[ƒU[‚ğì¬**
+2. **å°‚ç”¨ãƒ¦ãƒ¼ã‚¶ãƒ¼ã‚’ä½œæˆ**
    ```sql
    CREATE LOGIN cgn_user WITH PASSWORD = 'StrongPassword123!';
    USE CGNotes;
@@ -394,70 +394,76 @@ http://192.168.11.23:8080
    ALTER ROLE db_owner ADD MEMBER cgn_user;
    ```
 
-3. **TLS/SSL ‚ğ—LŒø‰»**
+3. **TLS/SSL ã‚’æœ‰åŠ¹åŒ–**
    ```yaml
    environment:
      - Encrypt=True
    ```
 
-4. **ƒf[ƒ^ƒtƒHƒ‹ƒ_‚ÌŒ ŒÀ‚ğ§ŒÀ**
+4. **ãƒ‡ãƒ¼ã‚¿ãƒ•ã‚©ãƒ«ãƒ€ã®æ¨©é™ã‚’åˆ¶é™**
    ```cmd
    icacls D:\MSSQL\Data /inheritance:r
    icacls D:\MSSQL\Data /grant Administrators:F
    ```
 
-### ƒpƒtƒH[ƒ}ƒ“ƒX
+### ãƒ‘ãƒ•ã‚©ãƒ¼ãƒãƒ³ã‚¹
 
-1. **ƒƒ‚ƒŠ§ŒÀ‚ğİ’è**
+1. **ãƒ¡ãƒ¢ãƒªåˆ¶é™ã‚’è¨­å®š**
    ```yaml
    sqlserver:
      deploy:
        resources:
          limits:
            memory: 4G
-    reservations:
+         reservations:
            memory: 2G
    ```
 
-2. **ƒoƒbƒNƒAƒbƒvƒXƒPƒWƒ…[ƒ‹**
-   - Windows Task Scheduler ‚Å’èŠúƒoƒbƒNƒAƒbƒv
+2. **ãƒãƒƒã‚¯ã‚¢ãƒƒãƒ—ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«**
+   - Windows Task Scheduler ã§å®šæœŸãƒãƒƒã‚¯ã‚¢ãƒƒãƒ—
 
-3. **SSD‚Ìg—p**
-   - `D:\MSSQL\Data` ‚ğSSD‚É”z’u
+3. **SSDã®ä½¿ç”¨**
+   - `D:\MSSQL\Data` ã‚’SSDã«é…ç½®
 
-## ƒfƒBƒXƒN—e—ÊŠÇ—
+## ãƒ‡ã‚£ã‚¹ã‚¯å®¹é‡ç®¡ç†
 
-### Œ»İ‚Ìg—p—ÊŠm”F
+### ç¾åœ¨ã®ä½¿ç”¨é‡ç¢ºèª
 
 ```cmd
 dir D:\MSSQL\Data
 ```
 
-### ƒƒOƒtƒ@ƒCƒ‹‚ÌƒTƒCƒYŠÇ—
+### ãƒ­ã‚°ãƒ•ã‚¡ã‚¤ãƒ«ã®ã‚µã‚¤ã‚ºç®¡ç†
 
 ```sql
--- ƒƒOƒtƒ@ƒCƒ‹‚ÌƒTƒCƒY‚ğŠm”F
+-- ãƒ­ã‚°ãƒ•ã‚¡ã‚¤ãƒ«ã®ã‚µã‚¤ã‚ºã‚’ç¢ºèª
 USE CGNotes;
 GO
 EXEC sp_helpfile;
 GO
 
--- ƒƒOƒtƒ@ƒCƒ‹‚ğk¬
+-- ãƒ­ã‚°ãƒ•ã‚¡ã‚¤ãƒ«ã‚’ç¸®å°
 DBCC SHRINKFILE (CGNotes_log, 100);
 GO
 ```
 
-### ŒÃ‚¢ƒoƒbƒNƒAƒbƒv‚Ìíœ
+### å¤ã„ãƒãƒƒã‚¯ã‚¢ãƒƒãƒ—ã®å‰Šé™¤
 
 ```cmd
-# 30“úˆÈ‘O‚ÌƒoƒbƒNƒAƒbƒv‚ğíœ
+# 30æ—¥ä»¥å‰ã®ãƒãƒƒã‚¯ã‚¢ãƒƒãƒ—ã‚’å‰Šé™¤
 forfiles /p D:\MSSQL\Data /m *.bak /d -30 /c "cmd /c del @path"
 ```
 
-## Ÿ‚ÌƒXƒeƒbƒv
+## æ¬¡ã®ã‚¹ãƒ†ãƒƒãƒ—
 
-- **ŠÄ‹**: Prometheus + Grafana ‚ÅŠÄ‹
-- **ƒoƒbƒNƒAƒbƒv**: ’èŠúƒoƒbƒNƒAƒbƒv‚Ì©“®‰»iTask Schedulerj
-- **ƒXƒgƒŒ[ƒW**: RAID\¬‚Åƒf[ƒ^•ÛŒì
-- **ƒpƒtƒH[ƒ}ƒ“ƒX**: SSD‚Ö‚ÌˆÚs
-- **CI/CD**: GitHub Actions ‚Å‚ÌƒfƒvƒƒC©“®‰»
+- **ç›£è¦–**: Prometheus + Grafana ã§ç›£è¦–
+- **ãƒãƒƒã‚¯ã‚¢ãƒƒãƒ—**: å®šæœŸãƒãƒƒã‚¯ã‚¢ãƒƒãƒ—ã®è‡ªå‹•åŒ–ï¼ˆTask Schedulerï¼‰
+- **ã‚¹ãƒˆãƒ¬ãƒ¼ã‚¸**: RAIDæ§‹æˆã§ãƒ‡ãƒ¼ã‚¿ä¿è­·
+- **ãƒ‘ãƒ•ã‚©ãƒ¼ãƒãƒ³ã‚¹**: SSDã¸ã®ç§»è¡Œ
+- **CI/CD**: GitHub Actions ã§ã®ãƒ‡ãƒ—ãƒ­ã‚¤è‡ªå‹•åŒ–
+
+## å‚è€ƒãƒªãƒ³ã‚¯
+
+- [Docker Compose ãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆ](https://docs.docker.com/compose/)
+- [SQL Server on Linux](https://learn.microsoft.com/ja-jp/sql/linux/sql-server-linux-overview)
+- [ASP.NET Core Docker ã‚¤ãƒ¡ãƒ¼ã‚¸](https://hub.docker.com/_/microsoft-dotnet-aspnet)

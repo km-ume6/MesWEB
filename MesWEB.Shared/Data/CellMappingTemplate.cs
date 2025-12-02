@@ -5,6 +5,29 @@ using System.ComponentModel.DataAnnotations;
 namespace MesWEB.Shared.Data
 {
     /// <summary>
+    /// テンプレートをグルーピングするラベル(カテゴリ)
+    /// </summary>
+    public class CellMappingLabel
+    {
+        [Key]
+        public int LabelId { get; set; }
+
+        [Required]
+        [MaxLength(64)]
+        public string LabelName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 表示順
+        /// </summary>
+        public int SortOrder { get; set; } = 0;
+
+        /// <summary>
+        /// このラベルに属するテンプレート一覧
+        /// </summary>
+        public List<CellMappingTemplate> Templates { get; set; } = new();
+    }
+
+    /// <summary>
     /// セル対応表のテンプレートを保存するエンティティ
     /// </summary>
     public class CellMappingTemplate
@@ -34,6 +57,16 @@ namespace MesWEB.Shared.Data
         /// 最終更新日時
         /// </summary>
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// 属するラベルID (ツリー上位) - null 可
+        /// </summary>
+        public int? LabelId { get; set; }
+
+        /// <summary>
+        /// ラベルナビゲーション
+        /// </summary>
+        public CellMappingLabel? Label { get; set; }
 
         /// <summary>
         /// このテンプレートに含まれるマッピング

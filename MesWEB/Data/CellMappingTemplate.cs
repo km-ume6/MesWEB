@@ -3,7 +3,30 @@ using System.ComponentModel.DataAnnotations;
 namespace MesWEB.Data
 {
     /// <summary>
-    /// �Z���Ή��\�̃e���v���[�g��ۑ�����G���e�B�e�B
+    /// テンプレートをグルーピングするラベル(カテゴリ)
+    /// </summary>
+    public class CellMappingLabel
+    {
+        [Key]
+        public int LabelId { get; set; }
+
+        [Required]
+        [MaxLength(64)]
+        public string LabelName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 表示順
+        /// </summary>
+        public int SortOrder { get; set; } = 0;
+
+        /// <summary>
+        /// このラベルに属するテンプレート一覧
+        /// </summary>
+        public List<CellMappingTemplate> Templates { get; set; } = new();
+    }
+
+    /// <summary>
+    /// セル比較用のテンプレート定義エンティティ
     /// </summary>
     public class CellMappingTemplate
     {
@@ -11,36 +34,46 @@ namespace MesWEB.Data
         public int TemplateId { get; set; }
 
         /// <summary>
-        /// �e���v���[�g��
+        /// テンプレート名
         /// </summary>
         [Required]
         [MaxLength(100)]
         public string TemplateName { get; set; } = string.Empty;
 
         /// <summary>
-        /// ����
+        /// 説明
         /// </summary>
         [MaxLength(500)]
         public string? Description { get; set; }
 
         /// <summary>
-        /// �쐬����
+        /// 作成日時
         /// </summary>
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         /// <summary>
-        /// �ŏI�X�V����
+        /// 最終更新日時
         /// </summary>
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         /// <summary>
-        /// ���̃e���v���[�g�Ɋ܂܂��}�b�s���O
+        /// 属するラベルID (ツリー上位) - null 可
+        /// </summary>
+        public int? LabelId { get; set; }
+
+        /// <summary>
+        /// ラベルナビゲーション
+        /// </summary>
+        public CellMappingLabel? Label { get; set; }
+
+        /// <summary>
+        /// このテンプレートに属するマッピング
         /// </summary>
         public List<CellMappingItem> MappingItems { get; set; } = new();
     }
 
     /// <summary>
-    /// �Z���Ή��\�̌ʍ���
+    /// セル比較用の項目定義
     /// </summary>
     public class CellMappingItem
     {
@@ -48,72 +81,72 @@ namespace MesWEB.Data
         public int MappingItemId { get; set; }
 
         /// <summary>
-        /// ��������e���v���[�gID
+        /// 親となるテンプレートID
         /// </summary>
         public int TemplateId { get; set; }
 
         /// <summary>
-        /// ���я�
+        /// 並び順
         /// </summary>
         public int SortOrder { get; set; }
 
         /// <summary>
-        /// ���ږ�
+        /// 項目名
         /// </summary>
         [Required]
         [MaxLength(100)]
         public string ItemName { get; set; } = string.Empty;
 
         /// <summary>
-        /// �V�[�g1�̖��O
+        /// シート1の名称
         /// </summary>
         [Required]
         [MaxLength(50)]
         public string Sheet1Name { get; set; } = "Sheet1";
 
         /// <summary>
-        /// �V�[�g1�̃Z���A�h���X
+        /// シート1のセルアドレス
         /// </summary>
         [Required]
         [MaxLength(20)]
         public string Sheet1Cell { get; set; } = string.Empty;
 
         /// <summary>
-        /// �V�[�g1�̐����^�C�v�i0=None, 1=Max, 2=Min, 3=Average�j
+        /// シート1の集計タイプ(0=None, 1=Max, 2=Min, 3=Average)
         /// </summary>
         public int Sheet1Formula { get; set; } = 0;
 
         /// <summary>
-        /// �V�[�g2�̖��O
+        /// シート2の名称
         /// </summary>
         [Required]
         [MaxLength(50)]
         public string Sheet2Name { get; set; } = "Sheet2";
 
         /// <summary>
-        /// �V�[�g2�̃Z���A�h���X
+        /// シート2のセルアドレス
         /// </summary>
         [Required]
         [MaxLength(20)]
         public string Sheet2Cell { get; set; } = string.Empty;
 
         /// <summary>
-        /// �V�[�g2�̐����^�C�v�i0=None, 1=Max, 2=Min, 3=Average�j
+        /// シート2の集計タイプ(0=None, 1=Max, 2=Min, 3=Average)
         /// </summary>
         public int Sheet2Formula { get; set; } = 0;
 
         /// <summary>
-        /// ���l��r���̏����_�ȉ��̌����i�f�t�H���g: 2���j
+        /// 数値比較の小数桁数(デフォルト: 2桁)
         /// </summary>
         public int DecimalPlaces { get; set; } = 2;
 
         /// <summary>
-        /// ���l��r���̋��e�덷�i��Βl�A�f�t�H���g: 0 = ���S��v�j
+        /// 数値比較の許容誤差(単位値、デフォルト: 0 = 完全一致)
         /// </summary>
         public double Tolerance { get; set; } = 0.0;
 
         /// <summary>
-        /// �i�r�Q�[�V�����v���p�e�B
+        /// ナビゲーションテンプレート
         /// </summary>
         public CellMappingTemplate? Template { get; set; }
     }

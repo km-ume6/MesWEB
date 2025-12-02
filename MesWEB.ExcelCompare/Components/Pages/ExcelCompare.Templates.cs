@@ -15,23 +15,32 @@ public partial class ExcelCompare
             // タイムアウト付きでクエリ実行（10秒に延長）
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
 
-            Logger.LogInformation("データベースからテンプレートを読み込んでいます...");
+            Logger.LogInformation("データベースからテンプレートとラベルを読み込んでいます...");
 
             // DbContextFactoryから新しいインスタンスを取得
             await using var db = await DbFactory.CreateDbContextAsync(cts.Token);
 
+            // ラベルを読み込み
+            savedLabels = await db.CellMappingLabels
+                .OrderBy(l => l.SortOrder)
+                .ThenBy(l => l.LabelName)
+                .AsNoTracking()
+                .ToListAsync(cts.Token);
+
+            Logger.LogInformation($"ラベル読み込み完了: {savedLabels.Count}件");
+
             savedTemplates = await db.CellMappingTemplates
-             .Include(t => t.MappingItems)
-         .OrderBy(t => t.TemplateName)
-    .AsNoTracking() // パフォーマンス向上
-       .ToListAsync(cts.Token);
+                .Include(t => t.MappingItems)
+                .OrderBy(t => t.TemplateName)
+                .AsNoTracking()
+                .ToListAsync(cts.Token);
 
             Logger.LogInformation($"テンプレート読み込み完了: {savedTemplates.Count}件");
 
             // デバッグ: テンプレート名をログ出力
             foreach (var template in savedTemplates)
             {
-                Logger.LogInformation($"  - {template.TemplateName} (ID: {template.TemplateId}, Items: {template.MappingItems?.Count ?? 0})");
+                Logger.LogInformation($"  - {template.TemplateName} (ID: {template.TemplateId}, LabelID: {template.LabelId}, Items: {template.MappingItems?.Count ?? 0})");
             }
         }
         catch (TaskCanceledException ex)
@@ -40,6 +49,10 @@ public partial class ExcelCompare
             if (savedTemplates == null)
             {
                 savedTemplates = new List<CellMappingTemplate>();
+            }
+            if (savedLabels == null)
+            {
+                savedLabels = new List<CellMappingLabel>();
             }
             templateMessage = "テンプレートの読み込みがタイムアウトしました。データベース接続を確認してください。";
             throw;
@@ -52,6 +65,10 @@ public partial class ExcelCompare
             if (savedTemplates == null)
             {
                 savedTemplates = new List<CellMappingTemplate>();
+            }
+            if (savedLabels == null)
+            {
+                savedLabels = new List<CellMappingLabel>();
             }
             templateMessage = $"テンプレートの読み込みに失敗しました: {ex.Message}";
             throw;

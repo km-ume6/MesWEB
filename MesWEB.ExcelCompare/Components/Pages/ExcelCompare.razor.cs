@@ -12,6 +12,15 @@ namespace MesWEB.ExcelCompare.Components.Pages;
 
 public partial class ExcelCompare : IAsyncDisposable
 {
+    public enum RenameMode
+    {
+        Book1 = 1,
+        Book2 = 2,
+        Sheet1 = 3,
+        Sheet2 = 4,
+        BothBooks = 5
+    }
+
     private class UploadedBook
     {
         public string FileName { get; set; } = string.Empty;
@@ -26,7 +35,10 @@ public partial class ExcelCompare : IAsyncDisposable
     private List<string> tempFiles = new(); // CSV ダウンロード用の一時ファイルリスト
 
     // テンプレート関連
+    private List<CellMappingLabel> savedLabels = new();
     private List<CellMappingTemplate> savedTemplates = new();
+    private List<CellMappingTemplate> filteredTemplates = new();
+    private int selectedLabelId = 0;
     private int selectedTemplateId = 0;
     private string newTemplateName = string.Empty;
     private string newTemplateDescription = string.Empty;
@@ -48,7 +60,7 @@ public partial class ExcelCompare : IAsyncDisposable
     private string targetBookName = string.Empty;
     private string sourceSheetName = string.Empty;
     private string targetSheetName = string.Empty;
-    private int renameMode = 1; // 1: ブック名のみ, 2: シート名のみ, 3: 両方
+    private RenameMode renameMode = RenameMode.Book1; // rename mode enum
 
     [Inject] private ILogger<ExcelCompare> Logger { get; set; } = default!;
     [Inject] private IDbContextFactory<AppDbContext> DbFactory { get; set; } = default!;
@@ -77,6 +89,9 @@ public partial class ExcelCompare : IAsyncDisposable
             {
                 templateMessage = "保存されたテンプレートはありません";
             }
+
+            // 初期状態ではすべて表示
+            filteredTemplates = savedTemplates;
         }
         catch (Exception ex)
         {
@@ -88,6 +103,11 @@ public partial class ExcelCompare : IAsyncDisposable
             {
                 savedTemplates = new List<CellMappingTemplate>();
             }
+            if (savedLabels == null)
+            {
+                savedLabels = new List<CellMappingLabel>();
+            }
+            filteredTemplates = new List<CellMappingTemplate>();
         }
         finally
         {
@@ -283,11 +303,11 @@ public partial class ExcelCompare : IAsyncDisposable
 
         if (bookNumber == 1)
         {
-            mapping.Book1Index = uploadedBooks.FindIndex(b => b.FileName == mapping.Book1FileName);
+            mapping.Book1Index = uploadedBooks.FindIndex(b => string.Equals(b.FileName?.Trim(), mapping.Book1FileName?.Trim(), StringComparison.OrdinalIgnoreCase));
         }
         else if (bookNumber == 2)
         {
-            mapping.Book2Index = uploadedBooks.FindIndex(b => b.FileName == mapping.Book2FileName);
+            mapping.Book2Index = uploadedBooks.FindIndex(b => string.Equals(b.FileName?.Trim(), mapping.Book2FileName?.Trim(), StringComparison.OrdinalIgnoreCase));
         }
 
         StateHasChanged();
@@ -298,8 +318,8 @@ public partial class ExcelCompare : IAsyncDisposable
     {
         foreach (var mapping in cellMappings)
         {
-            mapping.Book1Index = uploadedBooks.FindIndex(b => b.FileName == mapping.Book1FileName);
-            mapping.Book2Index = uploadedBooks.FindIndex(b => b.FileName == mapping.Book2FileName);
+            mapping.Book1Index = uploadedBooks.FindIndex(b => string.Equals(b.FileName?.Trim(), mapping.Book1FileName?.Trim(), StringComparison.OrdinalIgnoreCase));
+            mapping.Book2Index = uploadedBooks.FindIndex(b => string.Equals(b.FileName?.Trim(), mapping.Book2FileName?.Trim(), StringComparison.OrdinalIgnoreCase));
         }
     }
 
@@ -372,7 +392,7 @@ public partial class ExcelCompare : IAsyncDisposable
 
     private void RemoveUploadedFile(string fileName)
     {
-        var book = uploadedBooks.FirstOrDefault(b => b.FileName == fileName);
+        var book = uploadedBooks.FirstOrDefault(b => string.Equals(b.FileName?.Trim(), fileName?.Trim(), StringComparison.OrdinalIgnoreCase));
         if (book != null)
         {
             book.Workbook?.Dispose();
@@ -438,7 +458,7 @@ public partial class ExcelCompare : IAsyncDisposable
         targetBookName = string.Empty;
         sourceSheetName = string.Empty;
         targetSheetName = string.Empty;
-        renameMode = 1;
+        renameMode = RenameMode.Book1;
         StateHasChanged();
     }
 
@@ -459,59 +479,65 @@ public partial class ExcelCompare : IAsyncDisposable
                 return;
             }
 
-            int changedCount = 0;
+            int changedFieldCount = 0;
+            bool missingTargetBookWarning = false;
 
             // 新しいリストを作成してBlazorに変更を確実に検知させる
             var updatedMappings = new List<CellMapping>();
 
+            var srcBook = sourceBookName?.Trim();
+            var dstBook = targetBookName?.Trim();
+            var srcSheet = sourceSheetName?.Trim();
+            var dstSheet = targetSheetName?.Trim();
+
             foreach (var mapping in cellMappings)
             {
-                bool changed = false;
-                var updatedMapping = mapping; // 参照をコピー
+                var updatedMapping = CloneMapping(mapping);
 
-                // ブック1の変換 (mode: 1 = ブック1のみ, 5 = 両方)
-                if ((renameMode == 1 || renameMode == 5) && !string.IsNullOrEmpty(sourceBookName) && !string.IsNullOrEmpty(targetBookName))
+                // ブック1の変換
+                if ((renameMode == RenameMode.Book1 || renameMode == RenameMode.BothBooks) && !string.IsNullOrEmpty(srcBook) && !string.IsNullOrEmpty(dstBook))
                 {
-                    if (updatedMapping.Book1FileName == sourceBookName)
+                    if (string.Equals(mapping.Book1FileName?.Trim(), srcBook, StringComparison.OrdinalIgnoreCase))
                     {
-                        updatedMapping.Book1FileName = targetBookName;
-                        changed = true;
+                        updatedMapping.Book1FileName = dstBook!;
+                        changedFieldCount++;
+
+                        if (!uploadedBooks.Any(b => string.Equals(b.FileName?.Trim(), dstBook, StringComparison.OrdinalIgnoreCase)))
+                            missingTargetBookWarning = true;
                     }
                 }
 
-                // ブック2の変換 (mode: 2 = ブック2のみ, 5 = 両方)
-                if ((renameMode == 2 || renameMode == 5) && !string.IsNullOrEmpty(sourceBookName) && !string.IsNullOrEmpty(targetBookName))
+                // ブック2の変換
+                if ((renameMode == RenameMode.Book2 || renameMode == RenameMode.BothBooks) && !string.IsNullOrEmpty(srcBook) && !string.IsNullOrEmpty(dstBook))
                 {
-                    if (updatedMapping.Book2FileName == sourceBookName)
+                    if (string.Equals(mapping.Book2FileName?.Trim(), srcBook, StringComparison.OrdinalIgnoreCase))
                     {
-                        updatedMapping.Book2FileName = targetBookName;
-                        changed = true;
+                        updatedMapping.Book2FileName = dstBook!;
+                        changedFieldCount++;
+
+                        if (!uploadedBooks.Any(b => string.Equals(b.FileName?.Trim(), dstBook, StringComparison.OrdinalIgnoreCase)))
+                            missingTargetBookWarning = true;
                     }
                 }
 
-                // ブック1のシート名の変換 (mode: 3 = ブック1のシートのみ)
-                if (renameMode == 3 && !string.IsNullOrEmpty(sourceSheetName) && !string.IsNullOrEmpty(targetSheetName))
+                // ブック1のシート名の変換
+                if (renameMode == RenameMode.Sheet1 && !string.IsNullOrEmpty(srcSheet) && !string.IsNullOrEmpty(dstSheet))
                 {
-                    if (updatedMapping.Sheet1Name == sourceSheetName)
+                    if (string.Equals(mapping.Sheet1Name?.Trim(), srcSheet, StringComparison.OrdinalIgnoreCase))
                     {
-                        updatedMapping.Sheet1Name = targetSheetName;
-                        changed = true;
+                        updatedMapping.Sheet1Name = dstSheet!;
+                        changedFieldCount++;
                     }
                 }
 
-                // ブック2のシート名の変換 (mode: 4 = ブック2のシートのみ)
-                if (renameMode == 4 && !string.IsNullOrEmpty(sourceSheetName) && !string.IsNullOrEmpty(targetSheetName))
+                // ブック2のシート名の変換
+                if (renameMode == RenameMode.Sheet2 && !string.IsNullOrEmpty(srcSheet) && !string.IsNullOrEmpty(dstSheet))
                 {
-                    if (updatedMapping.Sheet2Name == sourceSheetName)
+                    if (string.Equals(mapping.Sheet2Name?.Trim(), srcSheet, StringComparison.OrdinalIgnoreCase))
                     {
-                        updatedMapping.Sheet2Name = targetSheetName;
-                        changed = true;
+                        updatedMapping.Sheet2Name = dstSheet!;
+                        changedFieldCount++;
                     }
-                }
-
-                if (changed)
-                {
-                    changedCount++;
                 }
 
                 updatedMappings.Add(updatedMapping);
@@ -525,16 +551,21 @@ public partial class ExcelCompare : IAsyncDisposable
 
             var modeText = renameMode switch
             {
-                1 => "ブック1のファイル名",
-                2 => "ブック2のファイル名",
-                3 => "ブック1のシート名",
-                4 => "ブック2のシート名",
-                5 => "ブック1とブック2のファイル名",
+                RenameMode.Book1 => "ブック1のファイル名",
+                RenameMode.Book2 => "ブック2のファイル名",
+                RenameMode.Sheet1 => "ブック1のシート名",
+                RenameMode.Sheet2 => "ブック2のシート名",
+                RenameMode.BothBooks => "ブック1とブック2のファイル名",
                 _ => "項目"
             };
 
-            templateMessage = $"{modeText}を{changedCount}項目一括変換しました";
-            Logger.LogInformation($"一括変換完了 (mode={renameMode}): {changedCount}項目");
+            templateMessage = $"{modeText}を{changedFieldCount}件変更しました";
+            if (missingTargetBookWarning)
+            {
+                templateMessage += "（注意: 変更先ファイルはアップロードされていないため、インデックスは未設定になります）";
+            }
+
+            Logger.LogInformation($"一括変換完了 (mode={renameMode}): {changedFieldCount}件");
 
             HideBulkRename();
             
@@ -552,14 +583,14 @@ public partial class ExcelCompare : IAsyncDisposable
     // Get unique book names from current mappings (with mode support)
     private List<string> GetUniqueBookNames(int mode = 0)
     {
-        var bookNames = new HashSet<string>();
+        var bookNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var mapping in cellMappings)
         {
             // mode: 0=all, 1=Book1 only, 2=Book2 only, 5=both
             if ((mode == 0 || mode == 1 || mode == 5) && !string.IsNullOrEmpty(mapping.Book1FileName))
-                bookNames.Add(mapping.Book1FileName);
+                bookNames.Add(mapping.Book1FileName.Trim());
             if ((mode == 0 || mode == 2 || mode == 5) && !string.IsNullOrEmpty(mapping.Book2FileName))
-                bookNames.Add(mapping.Book2FileName);
+                bookNames.Add(mapping.Book2FileName.Trim());
         }
         return bookNames.OrderBy(n => n).ToList();
     }
@@ -567,15 +598,59 @@ public partial class ExcelCompare : IAsyncDisposable
     // Get unique sheet names from current mappings (with mode support)
     private List<string> GetUniqueSheetNames(int mode = 0)
     {
-        var sheetNames = new HashSet<string>();
+        var sheetNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var mapping in cellMappings)
         {
             // mode: 0=all, 3=Book1's sheet only, 4=Book2's sheet only
             if ((mode == 0 || mode == 3) && !string.IsNullOrEmpty(mapping.Sheet1Name))
-                sheetNames.Add(mapping.Sheet1Name);
+                sheetNames.Add(mapping.Sheet1Name.Trim());
             if ((mode == 0 || mode == 4) && !string.IsNullOrEmpty(mapping.Sheet2Name))
-                sheetNames.Add(mapping.Sheet2Name);
+                sheetNames.Add(mapping.Sheet2Name.Trim());
         }
         return sheetNames.OrderBy(n => n).ToList();
+    }
+
+    private CellMapping CloneMapping(CellMapping src)
+    {
+        return new CellMapping
+        {
+            ItemName = src.ItemName,
+            Book1Index = src.Book1Index,
+            Book1FileName = src.Book1FileName,
+            Sheet1Name = src.Sheet1Name,
+            Sheet1Cell = src.Sheet1Cell,
+            Sheet1Formula = src.Sheet1Formula,
+            Book2Index = src.Book2Index,
+            Book2FileName = src.Book2FileName,
+            Sheet2Name = src.Sheet2Name,
+            Sheet2Cell = src.Sheet2Cell,
+            Sheet2Formula = src.Sheet2Formula,
+            DecimalPlaces = src.DecimalPlaces,
+            Tolerance = src.Tolerance
+        };
+    }
+
+    // ラベル選択時の処理
+    private void OnLabelChanged()
+    {
+        if (selectedLabelId == 0)
+        {
+            // すべて表示
+            filteredTemplates = savedTemplates;
+        }
+        else if (selectedLabelId == -1)
+        {
+            // 未分類（LabelId == null）
+            filteredTemplates = savedTemplates.Where(t => t.LabelId == null).ToList();
+        }
+        else
+        {
+            // 特定のラベルに属するテンプレート
+            filteredTemplates = savedTemplates.Where(t => t.LabelId == selectedLabelId).ToList();
+        }
+
+        // テンプレート選択をリセット
+        selectedTemplateId = 0;
+        StateHasChanged();
     }
 }

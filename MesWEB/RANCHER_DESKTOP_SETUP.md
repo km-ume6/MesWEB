@@ -1,56 +1,61 @@
-# Rancher Desktop ƒCƒ“ƒXƒg[ƒ‹è‡
+# Rancher Desktop ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«æ‰‹é †
 
-## 1. Rancher Desktop ‚Ìƒ_ƒEƒ“ƒ[ƒh
+## 1. Rancher Desktop ã®ãƒ€ã‚¦ãƒ³ãƒ­ãƒ¼ãƒ‰
 
 https://rancherdesktop.io/
-‚©‚çÅV”Å‚ğƒ_ƒEƒ“ƒ[ƒh
+ã‹ã‚‰æœ€æ–°ç‰ˆã‚’ãƒ€ã‚¦ãƒ³ãƒ­ãƒ¼ãƒ‰
 
-‚Ü‚½‚ÍAwinget ‚ÅƒCƒ“ƒXƒg[ƒ‹F
+ã¾ãŸã¯ã€winget ã§ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«ï¼š
 
 ```powershell
 winget install suse.RancherDesktop
 ```
 
-## 2. ‰‰ñ‹N“®‚Ìİ’è
+## 2. åˆå›èµ·å‹•æ™‚ã®è¨­å®š
 
-1. **Container Runtime ‚ğ‘I‘ğ**
-   - udockerd (moby)v‚ğ‘I‘ğiDocker CLIŒİŠ·‚Ì‚½‚ßj
+1. **Container Runtime ã‚’é¸æŠ**
+   - ã€Œdockerd (moby)ã€ã‚’é¸æŠï¼ˆDocker CLIäº’æ›ã®ãŸã‚ï¼‰
 
-2. **Kubernetes ‚ğ–³Œø‰»**iƒIƒvƒVƒ‡ƒ“j
-   - •s—v‚Èê‡‚ÍuKubernetes ‚ğ—LŒø‚É‚·‚év‚Ìƒ`ƒFƒbƒN‚ğŠO‚·
+2. **Kubernetes ã‚’ç„¡åŠ¹åŒ–**ï¼ˆã‚ªãƒ—ã‚·ãƒ§ãƒ³ï¼‰
+   - ä¸è¦ãªå ´åˆã¯ã€ŒKubernetes ã‚’æœ‰åŠ¹ã«ã™ã‚‹ã€ã®ãƒã‚§ãƒƒã‚¯ã‚’å¤–ã™
 
-3. **WSL2 “‡**
-   - ƒfƒtƒHƒ‹ƒg‚Ì‚Ü‚Ü‚ÅOK
+3. **WSL2 çµ±åˆ**
+   - ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã®ã¾ã¾ã§OK
 
-## 3. Šm”F
+## 3. ç¢ºèª
 
 ```powershell
 docker --version
 docker ps
 ```
 
-## 4. Šù‘¶‚Ì run-podman.bat ‚ğ run-docker.bat ‚É•ÏX
+## 4. æ—¢å­˜ã® run-podman.bat ã‚’ run-docker.bat ã«å¤‰æ›´
 
-podman ƒRƒ}ƒ“ƒh‚ğ docker ‚É’u‚«Š·‚¦‚é‚¾‚¯‚Å‚·B
+podman ã‚³ãƒãƒ³ãƒ‰ã‚’ docker ã«ç½®ãæ›ãˆã‚‹ã ã‘ã§ã™ã€‚
 
-## 5. ƒAƒvƒŠƒP[ƒVƒ‡ƒ“‹N“®
+## 5. ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³èµ·å‹•
 
 ```cmd
 .\run-docker.bat
 ```
 
-## ƒgƒ‰ƒuƒ‹ƒVƒ…[ƒeƒBƒ“ƒO
+## ãƒˆãƒ©ãƒ–ãƒ«ã‚·ãƒ¥ãƒ¼ãƒ†ã‚£ãƒ³ã‚°
 
-### WSL2 ‚ª•K—v
-Rancher Desktop ‚Í WSL2 ‚ğg—p‚·‚é‚½‚ßA–‘O‚ÉƒCƒ“ƒXƒg[ƒ‹‚ª•K—v‚Å‚·F
+### WSL2 ãŒå¿…è¦
+Rancher Desktop ã¯ WSL2 ã‚’ä½¿ç”¨ã™ã‚‹ãŸã‚ã€äº‹å‰ã«ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«ãŒå¿…è¦ã§ã™ï¼š
 
 ```powershell
 wsl --install
 ```
 
-### PATH ‚ÌŠm”F
-Rancher Desktop ‚ÌƒCƒ“ƒXƒg[ƒ‹ŒãADocker CLI ‚ªg‚¦‚È‚¢ê‡F
+### PATH ã®ç¢ºèª
+Rancher Desktop ã®ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«å¾Œã€Docker CLI ãŒä½¿ãˆãªã„å ´åˆï¼š
 
 ```powershell
-# Rancher Desktop ‚Ìİ’è ¨ WSL ¨ PATH“‡ ‚ğŠm”F
+# Rancher Desktop ã®è¨­å®š â†’ WSL â†’ PATHè¨­å®š ã‚’ç¢ºèª
 ```
+
+## å‚è€ƒ
+
+- [Rancher Desktop å…¬å¼ãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆ](https://docs.rancherdesktop.io/)
+- [Docker CLI ãƒªãƒ•ã‚¡ãƒ¬ãƒ³ã‚¹](https://docs.docker.com/engine/reference/commandline/cli/)

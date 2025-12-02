@@ -1,0 +1,381 @@
+@page "/cell-mapping/templates"
+@rendermode InteractiveServer
+@using MesWEB.Shared.Data
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject Microsoft.Extensions.Logging.ILogger<CellMappingTemplatesPage> Logger
+
+<PageTitle>セルマッピング テンプレート</PageTitle>
+
+<h3>セルマッピング テンプレート (ラベルツリー)</h3>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row g-2 align-items-center">
+            <div class="col-auto"><label class="form-label mb-0">新規ラベル名</label></div>
+            <div class="col"><input class="form-control" @bind="newLabelName" placeholder="例) 装置A" /></div>
+            <div class="col-auto"><button class="btn btn-primary" @onclick="AddLabel" disabled="@(string.IsNullOrWhiteSpace(newLabelName) || isBusy)">追加</button></div>
+        </div>
+    </div>
+</div>
+
+@if (isBusy)
+{
+    <p><em>処理中...</em></p>
+}
+else if (labels.Count == 0 && unclassifiedTemplates.Count == 0)
+{
+    <p>テンプレートはまだ存在しません。</p>
+}
+else
+{
+    <div class="accordion" id="labelAccordion">
+        @foreach (var label in labels.OrderBy(l => l.SortOrder).ThenBy(l => l.LabelName))
+        {
+            var collapseId = $"collapse-label-{label.LabelId}";
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="heading-@label.LabelId">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId">
+                        <strong>@label.LabelName</strong>
+                        <span class="ms-2 text-muted">(@(label.Templates.Count))</span>
+                    </button>
+                </h2>
+                <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="heading-@label.LabelId" data-bs-parent="#labelAccordion">
+                    <div class="accordion-body">
+                        <div class="mb-2 d-flex flex-wrap gap-2 align-items-center">
+                            @if (editingLabelId == label.LabelId)
+                            {
+                                <input class="form-control" style="max-width:260px" @bind="editLabelName" />
+                                <button class="btn btn-sm btn-success" @onclick="() => SaveLabelName(label)">保存</button>
+                                <button class="btn btn-sm btn-secondary" @onclick="CancelEditLabel">キャンセル</button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => StartEditLabel(label)">名称編集</button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteLabel(label)" disabled="@(label.Templates.Any() || isBusy)">削除</button>
+                            }
+                        </div>
+
+                        <table class="table table-sm table-bordered align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width:40%">テンプレート名</th>
+                                    <th>説明</th>
+                                    <th style="width:140px">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var t in label.Templates.OrderBy(t => t.TemplateName))
+                                {
+                                    <tr>
+                                        <td>
+                                            @if (editingTemplateId == t.TemplateId)
+                                            {
+                                                <input class="form-control form-control-sm" @bind="editTemplateName" />
+                                            }
+                                            else
+                                            {
+                                                <span>@t.TemplateName</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (editingTemplateId == t.TemplateId)
+                                            {
+                                                <input class="form-control form-control-sm" @bind="editTemplateDescription" />
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">@t.Description</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (editingTemplateId == t.TemplateId)
+                                            {
+                                                <div class="btn-group btn-group-sm">
+                                                    <button class="btn btn-success" @onclick="() => SaveTemplate(t)">保存</button>
+                                                    <button class="btn btn-secondary" @onclick="CancelEditTemplate">キャンセル</button>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="btn-group btn-group-sm">
+                                                    <button class="btn btn-outline-secondary" @onclick="() => StartEditTemplate(t)">編集</button>
+                                                    <button class="btn btn-outline-danger" @onclick="() => DeleteTemplate(t)">削除</button>
+                                                </div>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                                <tr>
+                                    <td colspan="3">
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <input class="form-control form-control-sm" style="max-width:220px" @bind="newTemplateName[label.LabelId]" placeholder="新規テンプレート名" />
+                                            <input class="form-control form-control-sm" style="max-width:260px" @bind="newTemplateDescription[label.LabelId]" placeholder="説明 (任意)" />
+                                            <button class="btn btn-sm btn-primary" @onclick="() => AddTemplate(label)" disabled="@(isBusy || string.IsNullOrWhiteSpace(newTemplateName.GetValueOrDefault(label.LabelId)))">追加</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (unclassifiedTemplates.Any())
+    {
+        <h5 class="mt-4">未分類 (@unclassifiedTemplates.Count)</h5>
+        <table class="table table-sm table-bordered">
+            <thead class="table-light">
+                <tr><th style="width:40%">テンプレート名</th><th>説明</th><th style="width:160px">操作</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var t in unclassifiedTemplates.OrderBy(t => t.TemplateName))
+                {
+                    <tr>
+                        <td>@t.TemplateName</td>
+                        <td><span class="text-muted">@t.Description</span></td>
+                        <td>
+                            <select class="form-select form-select-sm" @onchange="e => MoveTemplateToLabel(t, e.Value?.ToString())">
+                                <option value="">-- ラベルへ移動 --</option>
+                                @foreach (var l in labels.OrderBy(l => l.SortOrder))
+                                {
+                                    <option value="@l.LabelId">@l.LabelName</option>
+                                }
+                            </select>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@code {
+    private List<CellMappingLabel> labels = new();
+    private List<CellMappingTemplate> unclassifiedTemplates = new();
+
+    private string newLabelName = string.Empty;
+    private bool isBusy;
+
+    private Dictionary<int, string> newTemplateName = new();
+    private Dictionary<int, string?> newTemplateDescription = new();
+
+    private int? editingLabelId;
+    private string editLabelName = string.Empty;
+
+    private int? editingTemplateId;
+    private string editTemplateName = string.Empty;
+    private string? editTemplateDescription;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTree();
+    }
+
+    private async Task LoadTree()
+    {
+        isBusy = true;
+        try
+        {
+            using var db = DbFactory.CreateDbContext();
+            labels = await db.CellMappingLabels
+                .Include(l => l.Templates)
+                .OrderBy(l => l.SortOrder)
+                .ThenBy(l => l.LabelName)
+                .ToListAsync();
+
+            unclassifiedTemplates = await db.CellMappingTemplates
+                .Where(t => t.LabelId == null)
+                .ToListAsync();
+
+            foreach (var label in labels)
+            {
+                if (!newTemplateName.ContainsKey(label.LabelId))
+                    newTemplateName[label.LabelId] = string.Empty;
+                if (!newTemplateDescription.ContainsKey(label.LabelId))
+                    newTemplateDescription[label.LabelId] = string.Empty;
+            }
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task AddLabel()
+    {
+        if (string.IsNullOrWhiteSpace(newLabelName)) return;
+        isBusy = true;
+        try
+        {
+            using var db = DbFactory.CreateDbContext();
+            var maxSort = await db.CellMappingLabels.AnyAsync() ? await db.CellMappingLabels.MaxAsync(l => l.SortOrder) : 0;
+            var label = new CellMappingLabel { LabelName = newLabelName.Trim(), SortOrder = maxSort + 1 };
+            db.CellMappingLabels.Add(label);
+            await db.SaveChangesAsync();
+            newLabelName = string.Empty;
+            
+            newTemplateName[label.LabelId] = string.Empty;
+            newTemplateDescription[label.LabelId] = string.Empty;
+            
+            await LoadTree();
+        }
+        finally { isBusy = false; }
+    }
+
+    private void StartEditLabel(CellMappingLabel label)
+    {
+        editingLabelId = label.LabelId;
+        editLabelName = label.LabelName;
+    }
+    private void CancelEditLabel() => editingLabelId = null;
+
+    private async Task SaveLabelName(CellMappingLabel label)
+    {
+        if (editingLabelId != label.LabelId) return;
+        isBusy = true;
+        try
+        {
+            using var db = DbFactory.CreateDbContext();
+            var entity = await db.CellMappingLabels.FirstOrDefaultAsync(l => l.LabelId == label.LabelId);
+            if (entity != null)
+            {
+                entity.LabelName = editLabelName.Trim();
+                await db.SaveChangesAsync();
+            }
+        }
+        finally
+        {
+            editingLabelId = null;
+            isBusy = false;
+            await LoadTree();
+        }
+    }
+
+    private async Task DeleteLabel(CellMappingLabel label)
+    {
+        if (label.Templates.Any()) return;
+        isBusy = true;
+        try
+        {
+            using var db = DbFactory.CreateDbContext();
+            var entity = await db.CellMappingLabels.FirstOrDefaultAsync(l => l.LabelId == label.LabelId);
+            if (entity != null)
+            {
+                db.CellMappingLabels.Remove(entity);
+                await db.SaveChangesAsync();
+                
+                newTemplateName.Remove(label.LabelId);
+                newTemplateDescription.Remove(label.LabelId);
+            }
+        }
+        finally
+        {
+            isBusy = false;
+            await LoadTree();
+        }
+    }
+
+    private async Task AddTemplate(CellMappingLabel label)
+    {
+        if (!newTemplateName.TryGetValue(label.LabelId, out var name) || string.IsNullOrWhiteSpace(name)) return;
+        isBusy = true;
+        try
+        {
+            using var db = DbFactory.CreateDbContext();
+            var template = new CellMappingTemplate
+            {
+                TemplateName = name.Trim(),
+                Description = newTemplateDescription.GetValueOrDefault(label.LabelId)?.Trim(),
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                LabelId = label.LabelId
+            };
+            db.CellMappingTemplates.Add(template);
+            await db.SaveChangesAsync();
+            newTemplateName[label.LabelId] = string.Empty;
+            newTemplateDescription[label.LabelId] = string.Empty;
+            await LoadTree();
+        }
+        finally { isBusy = false; }
+    }
+
+    private void StartEditTemplate(CellMappingTemplate t)
+    {
+        editingTemplateId = t.TemplateId;
+        editTemplateName = t.TemplateName;
+        editTemplateDescription = t.Description;
+    }
+    private void CancelEditTemplate() => editingTemplateId = null;
+
+    private async Task SaveTemplate(CellMappingTemplate t)
+    {
+        if (editingTemplateId != t.TemplateId) return;
+        isBusy = true;
+        try
+        {
+            using var db = DbFactory.CreateDbContext();
+            var entity = await db.CellMappingTemplates.FirstOrDefaultAsync(x => x.TemplateId == t.TemplateId);
+            if (entity != null)
+            {
+                entity.TemplateName = editTemplateName.Trim();
+                entity.Description = editTemplateDescription?.Trim();
+                entity.UpdatedAt = DateTime.UtcNow;
+                await db.SaveChangesAsync();
+            }
+        }
+        finally
+        {
+            editingTemplateId = null;
+            isBusy = false;
+            await LoadTree();
+        }
+    }
+
+    private async Task DeleteTemplate(CellMappingTemplate t)
+    {
+        isBusy = true;
+        try
+        {
+            using var db = DbFactory.CreateDbContext();
+            var entity = await db.CellMappingTemplates.FirstOrDefaultAsync(x => x.TemplateId == t.TemplateId);
+            if (entity != null)
+            {
+                db.CellMappingTemplates.Remove(entity);
+                await db.SaveChangesAsync();
+            }
+        }
+        finally
+        {
+            isBusy = false;
+            await LoadTree();
+        }
+    }
+
+    private async Task MoveTemplateToLabel(CellMappingTemplate t, string? labelIdStr)
+    {
+        if (!int.TryParse(labelIdStr, out var lid)) return;
+        isBusy = true;
+        try
+        {
+            using var db = DbFactory.CreateDbContext();
+            var entity = await db.CellMappingTemplates.FirstOrDefaultAsync(x => x.TemplateId == t.TemplateId);
+            if (entity != null)
+            {
+                entity.LabelId = lid;
+                entity.UpdatedAt = DateTime.UtcNow;
+                await db.SaveChangesAsync();
+            }
+        }
+        finally
+        {
+            isBusy = false;
+            await LoadTree();
+        }
+    }
+
+    // ページ用ダミークラス (ILogger 取得用)
+    private class CellMappingTemplatesPage { }
+}

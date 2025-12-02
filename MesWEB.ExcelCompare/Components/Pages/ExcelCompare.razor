@@ -8,6 +8,7 @@
 @using System.Data
 @using ExcelDataReader
 @using static MesWEB.Shared.Models.FormulaType
+@using Microsoft.AspNetCore.Components.Forms
 
 <PageTitle>Excel シート比較</PageTitle>
 
@@ -277,18 +278,37 @@
 </h3>
 
 <div class="card mb-4">
-    <div class="card-body">
-        <h5 class="card-title">使い方</h5>
-        <ol>
-            <li><strong>テンプレートを先に読み込めます</strong> - ファイルアップロード前でもOK</li>
-            <li>複数のExcelファイルをアップロードします（最大5ファイル、複数回可）</li>
-            <li>セル対応表でファイル名、シート名、セルアドレスを指定します</li>
-            <li>数値比較時の小数点桁数と許容誤差を設定できます</li>
-            <li>「比較実行」ボタンをクリックします</li>
-        </ol>
-        <div class="alert alert-info">
-            <i class="fas fa-info-circle"></i> <strong>テンプレートはファイル名とシート名で保存されます。</strong><br />
-            ブックのアップロード順序に関係なく、同じファイル名があれば自動的に割り当てられます。
+    <div class="card-body py-2 px-3">
+        <h5 class="card-title mb-2">使い方</h5>
+        
+        <div class="row g-2">
+            <!-- 左側：手順 -->
+            <div class="col-md-7">
+                <ol class="mb-0 ps-3" style="line-height: 1.4; font-size: 0.95rem;">
+                    <li><strong>テンプレートを先に読み込めます</strong> - ファイルアップロード前でもOK</li>
+                    <li>複数のExcelファイルをアップロードします（最大5ファイル、複数回可）</li>
+                    <li>セル対応表でファイル名、シート名、セルアドレスを指定します</li>
+                    <li>数値比較時の小数点桁数と許容誤差を設定できます</li>
+                    <li>「比較実行」ボタンをクリックします</li>
+                </ol>
+            </div>
+            
+            <!-- 右側：重要な情報 -->
+            <div class="col-md-5">
+                <div class="alert alert-info py-2 px-2 mb-2" style="font-size: 0.85rem; line-height: 1.4;">
+                    <i class="fas fa-info-circle"></i> <strong>テンプレート保存について</strong><br />
+                    ファイル名とシート名で保存されます。アップロード順序に関係なく、同じファイル名があれば自動割り当て。
+                </div>
+                <div class="alert alert-success py-2 px-2 mb-0" style="font-size: 0.85rem; line-height: 1.4;">
+                    <i class="fas fa-tags"></i> <strong>ラベル（カテゴリ）機能</strong><br />
+                    装置別・プロジェクト別などで整理可能。<br />
+                    <small>
+                        • ラベル選択でフィルタリング<br />
+                        • ラベル管理は「<a href="/cell-mapping/templates" target="_blank">テンプレート管理</a>」ページで<br />
+                        • 未分類のテンプレートもあり
+                    </small>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -298,17 +318,28 @@
     <h4>テンプレート管理</h4>
 
     <div class="row mb-3">
+        <div class="col-md-3">
+            <label class="form-label">ラベル（カテゴリ）</label>
+            <select @bind="selectedLabelId" @bind:after="OnLabelChanged" class="form-select">
+                <option value="0">-- すべて表示 --</option>
+                @foreach (var label in savedLabels.OrderBy(l => l.SortOrder))
+                {
+                    <option value="@label.LabelId">@label.LabelName</option>
+                }
+                <option value="-1">未分類</option>
+            </select>
+        </div>
         <div class="col-md-4">
             <label class="form-label">保存されたテンプレート</label>
             <select @bind="selectedTemplateId" class="form-select">
                 <option value="0">-- テンプレートを選択 --</option>
-                @foreach (var template in savedTemplates)
+                @foreach (var template in filteredTemplates)
                 {
                     <option value="@template.TemplateId">@template.TemplateName</option>
                 }
             </select>
         </div>
-        <div class="col-md-8 d-flex align-items-end gap-2">
+        <div class="col-md-5 d-flex align-items-end gap-2">
             <button type="button" class="btn btn-primary" @onclick="LoadTemplate" disabled="@(selectedTemplateId == 0)">
                 <i class="fas fa-folder-open"></i> 読み込み
             </button>
@@ -901,6 +932,31 @@
   </ol>
   </li>
     </ul>
+
+     <div class="help-section mt-3">
+         <h6><i class="fas fa-tags"></i> ラベル（カテゴリ）機能</h6>
+         <p>テンプレートを<strong>ラベル</strong>で分類・整理できます：</p>
+         <ul>
+             <li><strong>ラベルで分類：</strong>装置別、プロジェクト別など、目的に応じてテンプレートをグループ化</li>
+             <li><strong>ラベル選択でフィルタリング：</strong>
+                 <ul>
+                     <li>「-- すべて表示 --」：全テンプレートを表示</li>
+                     <li>特定のラベルを選択：そのラベルのテンプレートのみ表示</li>
+                     <li>「未分類」：ラベルに属さないテンプレートを表示</li>
+                 </ul>
+             </li>
+             <li><strong>ラベルの管理：</strong>ラベルの作成・編集・削除は「<a href="/cell-mapping/templates" target="_blank">セルマッピングテンプレート管理</a>」ページで行います</li>
+             <li><strong>テンプレートのラベル設定：</strong>テンプレート保存時にラベルを選択（省略可）</li>
+         </ul>
+         <div class="help-example">
+             <strong>例：</strong><br />
+             <strong>ラベル「装置A」を作成</strong><br />
+             → 装置A関連のテンプレートを保存時にラベル「装置A」を選択<br />
+             → Excel比較ページでラベル「装置A」を選択すると、装置A関連のテンプレートのみ表示<br />
+             → 効率的にテンプレートを見つけられます
+         </div>
+     </div>
+
      <div class="alert alert-info mt-2">
             <i class="fas fa-lightbulb"></i> <strong>ポイント：</strong>
     <ul class="mb-0">
@@ -908,6 +964,7 @@
    <li>ファイルアップロード前でもテンプレートは読み込めます（ファイル名で自動マッチング）</li>
     <li>上書き保存が失敗する場合は、ブラウザのログ（F12 → Console）を確認してください</li>
    <li><strong>ボタンの表示（「保存」or「上書き」）が現在の動作モードの目印です</strong></li>
+   <li><strong>ラベル機能で大量のテンプレートも効率的に管理できます</strong></li>
     </ul>
    </div>
    </div>
@@ -948,46 +1005,39 @@
             <!-- 変換モード選択 -->
             <div class="mb-3">
                 <label class="form-label fw-bold">変換対象</label>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="renameMode" id="modeBook1" value="1" @onchange="@(() => renameMode = 1)" checked="@(renameMode == 1)">
-                    <label class="form-check-label" for="modeBook1">
-                        ブック1のファイル名のみ
-                    </label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="renameMode" id="modeBook2" value="2" @onchange="@(() => renameMode = 2)" checked="@(renameMode == 2)">
-                    <label class="form-check-label" for="modeBook2">
-                        ブック2のファイル名のみ
-                    </label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="renameMode" id="modeSheet1" value="3" @onchange="@(() => renameMode = 3)" checked="@(renameMode == 3)">
-                    <label class="form-check-label" for="modeSheet1">
-                        ブック1のシート名のみ
-                    </label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="renameMode" id="modeSheet2" value="4" @onchange="@(() => renameMode = 4)" checked="@(renameMode == 4)">
-                    <label class="form-check-label" for="modeSheet2">
-                        ブック2のシート名のみ
-                    </label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="renameMode" id="modeBoth" value="5" @onchange="@(() => renameMode = 5)" checked="@(renameMode == 5)">
-                    <label class="form-check-label" for="modeBoth">
-                        ブック1とブック2のファイル名の両方
-                    </label>
-                </div>
+
+                <InputRadioGroup @bind-Value="renameMode">
+                    <div class="form-check">
+                        <InputRadio class="form-check-input" Value="RenameMode.Book1" id="modeBook1" />
+                        <label class="form-check-label ms-2" for="modeBook1">ブック1のファイル名のみ</label>
+                    </div>
+                    <div class="form-check">
+                        <InputRadio class="form-check-input" Value="RenameMode.Book2" id="modeBook2" />
+                        <label class="form-check-label ms-2" for="modeBook2">ブック2のファイル名のみ</label>
+                    </div>
+                    <div class="form-check">
+                        <InputRadio class="form-check-input" Value="RenameMode.Sheet1" id="modeSheet1" />
+                        <label class="form-check-label ms-2" for="modeSheet1">ブック1のシート名のみ</label>
+                    </div>
+                    <div class="form-check">
+                        <InputRadio class="form-check-input" Value="RenameMode.Sheet2" id="modeSheet2" />
+                        <label class="form-check-label ms-2" for="modeSheet2">ブック2のシート名のみ</label>
+                    </div>
+                    <div class="form-check">
+                        <InputRadio class="form-check-input" Value="RenameMode.BothBooks" id="modeBoth" />
+                        <label class="form-check-label ms-2" for="modeBoth">ブック1とブック2のファイル名の両方</label>
+                    </div>
+                </InputRadioGroup>
             </div>
 
             <!-- ブック名変換 -->
-            @if (renameMode == 1 || renameMode == 2 || renameMode == 5)
+            @if (renameMode == RenameMode.Book1 || renameMode == RenameMode.Book2 || renameMode == RenameMode.BothBooks)
             {
                 <div class="mb-3">
                     <h5 class="text-primary">
                         <i class="fas fa-book"></i> 
-                        @if (renameMode == 1) { <text>ブック1のファイル名を変換</text> }
-                        else if (renameMode == 2) { <text>ブック2のファイル名を変換</text> }
+                        @if (renameMode == RenameMode.Book1) { <text>ブック1のファイル名を変換</text> }
+                        else if (renameMode == RenameMode.Book2) { <text>ブック2のファイル名を変換</text> }
                         else { <text>ファイル名の変換</text> }
                     </h5>
                     <div class="row g-2">
@@ -995,14 +1045,14 @@
                             <label class="form-label">変換元のファイル名</label>
                             <select @bind="sourceBookName" class="form-select">
                                 <option value="">-- 選択してください --</option>
-                                @foreach (var bookName in GetUniqueBookNames(renameMode))
+                                @foreach (var bookName in GetUniqueBookNames((int)renameMode))
                                 {
                                     <option value="@bookName">@bookName</option>
                                 }
                             </select>
                             <small class="text-muted">
-                                @if (renameMode == 1) { <text>ブック1のファイル名から候補を表示</text> }
-                                else if (renameMode == 2) { <text>ブック2のファイル名から候補を表示</text> }
+                                @if (renameMode == RenameMode.Book1) { <text>ブック1のファイル名から候補を表示</text> }
+                                else if (renameMode == RenameMode.Book2) { <text>ブック2のファイル名から候補を表示</text> }
                                 else { <text>現在のテンプレートから候補を表示</text> }
                             </small>
                         </div>
@@ -1022,12 +1072,12 @@
             }
 
             <!-- シート名変換 -->
-            @if (renameMode == 3 || renameMode == 4)
+            @if (renameMode == RenameMode.Sheet1 || renameMode == RenameMode.Sheet2)
             {
                 <div class="mb-3">
                     <h5 class="text-success">
                         <i class="fas fa-file-alt"></i> 
-                        @if (renameMode == 3) { <text>ブック1のシート名を変換</text> }
+                        @if (renameMode == RenameMode.Sheet1) { <text>ブック1のシート名を変換</text> }
                         else { <text>ブック2のシート名を変換</text> }
                     </h5>
                     <div class="row g-2">
@@ -1035,25 +1085,25 @@
                             <label class="form-label">変換元のシート名</label>
                             <select @bind="sourceSheetName" class="form-select">
                                 <option value="">-- 選択してください --</option>
-                                @foreach (var sheetName in GetUniqueSheetNames(renameMode))
+                                @foreach (var sheetName in GetUniqueSheetNames((int)renameMode))
                                 {
                                     <option value="@sheetName">@sheetName</option>
                                 }
                             </select>
                             <small class="text-muted">
-                                @if (renameMode == 3) { <text>ブック1のシート名から候補を表示</text> }
+                                @if (renameMode == RenameMode.Sheet1) { <text>ブック1のシート名から候補を表示</text> }
                                 else { <text>ブック2のシート名から候補を表示</text> }
                             </small>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">変換先のシート名</label>
-                            <input type="text" @bind="targetSheetName" class="form-control" placeholder="新しいシート名を入力" list="@($"available-sheets-{renameMode}")" />
-                            <datalist id="@($"available-sheets-{renameMode}")">
+                            <input type="text" @bind="targetSheetName" class="form-control" placeholder="新しいシート名を入力" list="@($"available-sheets-{(int)renameMode}")" />
+                            <datalist id="@($"available-sheets-{(int)renameMode}")">
                                 @if (uploadedBooks.Any())
                                 {
                                     @if (!string.IsNullOrEmpty(targetBookName))
                                     {
-                                        var targetBook = uploadedBooks.FirstOrDefault(b => b.FileName == targetBookName);
+                                        var targetBook = uploadedBooks.FirstOrDefault(b => string.Equals(b.FileName?.Trim(), targetBookName?.Trim(), StringComparison.OrdinalIgnoreCase));
                                         if (targetBook != null)
                                         {
                                             @foreach (var sheet in targetBook.Workbook.Worksheets)
@@ -1065,7 +1115,7 @@
                                     else
                                     {
                                         @* ブック名未選択の場合は全ブックのシート名を表示 *@
-                                        var allSheets = new HashSet<string>();
+                                        var allSheets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                                         @foreach (var book in uploadedBooks)
                                         {
                                             @foreach (var sheet in book.Workbook.Worksheets)
@@ -1090,11 +1140,11 @@
             @if (!string.IsNullOrEmpty(sourceBookName) || !string.IsNullOrEmpty(sourceSheetName))
             {
                 var affectedCount = cellMappings.Count(m => 
-                    (renameMode == 1 && m.Book1FileName == sourceBookName) ||
-                    (renameMode == 2 && m.Book2FileName == sourceBookName) ||
-                    (renameMode == 3 && m.Sheet1Name == sourceSheetName) ||
-                    (renameMode == 4 && m.Sheet2Name == sourceSheetName) ||
-                    (renameMode == 5 && (m.Book1FileName == sourceBookName || m.Book2FileName == sourceBookName))
+                    (renameMode == RenameMode.Book1 && string.Equals(m.Book1FileName?.Trim(), sourceBookName?.Trim(), StringComparison.OrdinalIgnoreCase)) ||
+                    (renameMode == RenameMode.Book2 && string.Equals(m.Book2FileName?.Trim(), sourceBookName?.Trim(), StringComparison.OrdinalIgnoreCase)) ||
+                    (renameMode == RenameMode.Sheet1 && string.Equals(m.Sheet1Name?.Trim(), sourceSheetName?.Trim(), StringComparison.OrdinalIgnoreCase)) ||
+                    (renameMode == RenameMode.Sheet2 && string.Equals(m.Sheet2Name?.Trim(), sourceSheetName?.Trim(), StringComparison.OrdinalIgnoreCase)) ||
+                    (renameMode == RenameMode.BothBooks && (string.Equals(m.Book1FileName?.Trim(), sourceBookName?.Trim(), StringComparison.OrdinalIgnoreCase) || string.Equals(m.Book2FileName?.Trim(), sourceBookName?.Trim(), StringComparison.OrdinalIgnoreCase)))
                 );
 
                 <div class="alert alert-warning">
@@ -1110,8 +1160,8 @@
                 </button>
                 <button type="button" class="btn btn-primary" @onclick="ApplyBulkRename"
                         disabled="@(
-                            ((renameMode == 1 || renameMode == 2 || renameMode == 5) && (string.IsNullOrEmpty(sourceBookName) || string.IsNullOrEmpty(targetBookName))) ||
-                            ((renameMode == 3 || renameMode == 4) && (string.IsNullOrEmpty(sourceSheetName) || string.IsNullOrEmpty(targetSheetName)))
+                            ((renameMode == RenameMode.Book1 || renameMode == RenameMode.Book2 || renameMode == RenameMode.BothBooks) && (string.IsNullOrEmpty(sourceBookName) || string.IsNullOrEmpty(targetBookName))) ||
+                            ((renameMode == RenameMode.Sheet1 || renameMode == RenameMode.Sheet2) && (string.IsNullOrEmpty(sourceSheetName) || string.IsNullOrEmpty(targetSheetName)))
                         )">
                     <i class="fas fa-check"></i> 変換実行
                 </button>

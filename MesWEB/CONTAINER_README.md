@@ -1,21 +1,21 @@
-# Crystal Growth Notebook 2 - �R���e�i���s�K�C�h
+# Crystal Growth Notebook 2 - コンテナ実行ガイド
 
-## �O�����
-- Podman�܂���docker ���C���X�g�[������Ă��邱��
-- .NET 9 SDK���C���X�g�[������Ă��邱�Ɓi���[�J���r���h�p�j
-- **SQL Server�����p�\�ł��邱��**
+## 前提条件
+- Podmanまたはdocker がインストールされていること
+- .NET 9 SDKがインストールされていること（ローカルビルド用）
+- **SQL Serverが利用可能であること**
 
-## �f�[�^�x�[�X�ݒ�
+## データベース設定
 
-���̃A�v���P�[�V������ **SQL Server** ���g�p���܂��B
+このアプリケーションは **SQL Server** を使用します。
 
-### �ݒ�t�@�C��
+### 設定ファイル
 
-�ڑ�������� **`appsettings.json`** ��1�t�@�C���݂̂ŊǗ����܂��B
+接続文字列は **`appsettings.json`** の1ファイルのみで管理します。
 
-### ����Z�b�g�A�b�v
+### 初回セットアップ
 
-1. **�e���v���[�g���R�s�[**
+1. **テンプレートをコピー**
 
 ```bash
 cd CrystalGrowthNotebook2
@@ -28,9 +28,9 @@ cd CrystalGrowthNotebook2
 Copy-Item appsettings.json.template appsettings.json
 ```
 
-2. **�ڑ�����ҏW**
+2. **接続情報を編集**
 
-`appsettings.json` ���J���āASQL Server�ڑ�����ݒ�F
+`appsettings.json` を開いて、SQL Server接続情報を設定：
 
 ```json
 {
@@ -40,24 +40,24 @@ Copy-Item appsettings.json.template appsettings.json
 }
 ```
 
-**?? �d�v**:
-- ���̃t�@�C���ɂ͋@����񂪊܂܂�邽�߁AGit�ɃR�~�b�g���Ȃ��ł�������
-- `.gitignore.custom` �ɒǉ��ς�
-- �f�[�^�x�[�X `CGNotes` �����O�ɍ쐬���Ă����K�v������܂�
+**?? 重要**:
+- このファイルには機密情報が含まれるため、Gitにコミットしないでください
+- `.gitignore.custom` に追加済み
+- データベース `CGNotes` を事前に作成しておく必要があります
 
-## SQL Server�f�[�^�x�[�X�̏���
+## SQL Serverデータベースの準備
 
-�R���e�i�N���O�ɁASQL Server�Ƀf�[�^�x�[�X���쐬���Ă��������F
+コンテナ起動前に、SQL Serverにデータベースを作成してください：
 
 ```sql
 CREATE DATABASE CGNotes;
 ```
 
-�}�C�O���[�V�����̓A�v���P�[�V�����N�����Ɏ����I�Ɏ��s����܂��B
+マイグレーションはアプリケーション起動時に自動的に実行されます。
 
-## ���s���@
+## 実行方法
 
-### Podman�Ŏ��s�i�����j
+### Podmanで実行（推奨）
 
 #### Windows
 ```cmd
@@ -72,187 +72,187 @@ chmod +x run-podman.sh
 ./run-podman.sh
 ```
 
-### Docker Compose�Ŏ��s
+### Docker Composeで実行
 
-SQL Server�R���e�i���܂߂Ĉꊇ�N���F
+SQL Serverコンテナも含めて一括起動：
 
 ```bash
 docker-compose up -d
 ```
 
-�܂���
+または
 
 ```bash
 podman-compose up -d
 ```
 
-## �A�N�Z�X
+## アクセス
 
-### ���[�J������A�N�Z�X
+### ローカルからアクセス
 
-�u���E�U�ňȉ���URL���J���܂��F
+ブラウザで以下のURLを開きます：
 ```
 http://localhost:8080
 ```
 
-### LAN���̑���PC����A�N�Z�X
+### LAN内の他のPCからアクセス
 
-#### 1. Windows�t�@�C�A�E�H�[���̐ݒ�
+#### 1. Windowsファイアウォールの設定
 
-**���@A: �����ݒ�i�����j**
+**方法A: 自動設定（推奨）**
 
-`setup-firewall.bat` ��**�Ǘ��҂Ƃ��Ď��s**���Ă��������F
+`setup-firewall.bat` を**管理者として実行**してください：
 
-1. `setup-firewall.bat` ���E�N���b�N
-2. **�u�Ǘ��҂Ƃ��Ď��s�v**��I��
+1. `setup-firewall.bat` を右クリック
+2. **「管理者として実行」**を選択
 
-**���@B: �蓮�ݒ�**
+**方法B: 手動設定**
 
-PowerShell���Ǘ��҂Ƃ��ĊJ���A�ȉ������s�F
+PowerShellを管理者として開き、以下を実行：
 
 ```powershell
 New-NetFirewallRule -DisplayName "Crystal Growth Notebook (Podman)" -Direction Inbound -Protocol TCP -LocalPort 8080 -Action Allow -Profile Private,Domain
 ```
 
-�܂��́AWindows Defender �t�@�C�A�E�H�[����GUI�Őݒ�F
-1. Windows �L�[ �� �u�t�@�C�A�E�H�[���v�Ō���
-2. �u�ڍאݒ�v���u��M�̋K���v���u�V�����K���v
-3. �|�[�g: TCP 8080 ������
+または、Windows Defender ファイアウォールのGUIで設定：
+1. Windows キー → 「ファイアウォール」で検索
+2. 「詳細設定」→「受信の規則」→「新しい規則」
+3. ポート: TCP 8080 を許可
 
-#### 2. ����PC��IP�A�h���X���m�F
+#### 2. このPCのIPアドレスを確認
 
-PowerShell�ňȉ������s�F
+PowerShellで以下を実行：
 
 ```powershell
 ipconfig
 ```
 
-�܂���
+または
 
 ```powershell
 Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_.IPAddress -like "192.168.*"}
 ```
 
-��: `192.168.11.23`
+例: `192.168.11.23`
 
-#### 3. ����PC����A�N�Z�X
+#### 3. 他のPCからアクセス
 
-����PC�̃u���E�U�ňȉ���URL���J���܂��F
+他のPCのブラウザで以下のURLを開きます：
 
 ```
 http://192.168.11.23:8080
 ```
 
-�iIP�A�h���X�͎��ۂ̒l�ɒu�������Ă��������j
+（IPアドレスは実際の値に置き換えてください）
 
-## �J�����[�h
+## 開発モード
 
-���[�J���ŊJ������ꍇ�F
+ローカルで開発する場合：
 
 ```bash
 cd CrystalGrowthNotebook2
 dotnet run
 ```
 
-���� `appsettings.json` ���g�p����܂��B
+同じ `appsettings.json` が使用されます。
 
-## �֗��ȃR�}���h
+## 便利なコマンド
 
-### ���O�m�F
+### ログ確認
 ```bash
 podman logs -f crystalgrowthnotebook2
 ```
 
-### �R���e�i��~
+### コンテナ停止
 ```bash
 podman stop crystalgrowthnotebook2
 ```
 
-### �R���e�i�ċN��
+### コンテナ再起動
 ```bash
 podman start crystalgrowthnotebook2
 ```
 
-### �R���e�i�폜
+### コンテナ削除
 ```bash
 podman rm -f crystalgrowthnotebook2
 ```
 
-### ����PC��IP�A�h���X�m�F
+### このPCのIPアドレス確認
 ```bash
 ipconfig
-# �܂���
+# または
 hostname -I  # Linux/Mac
 ```
 
-## �g���u���V���[�e�B���O
+## トラブルシューティング
 
-### �ڑ�������G���[
-- `appsettings.json` �̐ݒ���m�F
-- SQL Server�ڑ���񂪐��������m�F
-- �t�@�C�������݂��Ȃ��ꍇ�� `appsettings.json.template` ����R�s�[
+### 接続文字列エラー
+- `appsettings.json` の設定を確認
+- SQL Server接続情報が正しいか確認
+- ファイルが存在しない場合は `appsettings.json.template` からコピー
 
-### SQL Server�ڑ��G���[
-1. SQL Server���N�����Ă��邩�m�F
-2. �t�@�C�A�E�H�[���Ń|�[�g1433���J���Ă��邩�m�F
-3. SQL Server�F�؂��L���ɂȂ��Ă��邩�m�F
-4. �f�[�^�x�[�X `CGNotes` �����݂��邩�m�F
+### SQL Server接続エラー
+1. SQL Serverが起動しているか確認
+2. ファイアウォールでポート1433が開いているか確認
+3. SQL Server認証が有効になっているか確認
+4. データベース `CGNotes` が存在するか確認
 
 ```sql
--- �f�[�^�x�[�X�̑��݊m�F
+-- データベースの存在確認
 SELECT name FROM sys.databases WHERE name = 'CGNotes';
 
--- ���݂��Ȃ��ꍇ�͍쐬
+-- 存在しない場合は作成
 CREATE DATABASE CGNotes;
 ```
 
-### �}�C�O���[�V�����G���[
-�A�v���P�[�V�����N�����Ɏ����I�Ƀ}�C�O���[�V���������s����܂��B
-�G���[����������ꍇ�́A���O���m�F���Ă��������F
+### マイグレーションエラー
+アプリケーション起動時に自動的にマイグレーションが実行されます。
+エラーが発生する場合は、ログを確認してください：
 
 ```bash
 podman logs crystalgrowthnotebook2
 ```
 
-### LAN���̑���PC����A�N�Z�X�ł��Ȃ�
+### LAN内の他のPCからアクセスできない
 
-1. **Windows�t�@�C�A�E�H�[���̊m�F**
-   - �|�[�g8080��������Ă��邩�m�F
-   - `setup-firewall.bat` ���Ǘ��҂Ƃ��Ď��s
+1. **Windowsファイアウォールの確認**
+   - ポート8080が許可されているか確認
+   - `setup-firewall.bat` を管理者として実行
 
-2. **�R���e�i���N�����Ă��邩�m�F**
+2. **コンテナが起動しているか確認**
    ```bash
    podman ps
    ```
 
-3. **�|�[�g�o�C���f�B���O�̊m�F**
+3. **ポートバインディングの確認**
    ```bash
  podman ps | Select-String 8080
    ```
-   `0.0.0.0:8080->8080/tcp` �ƕ\������邱�Ƃ��m�F
+   `0.0.0.0:8080->8080/tcp` と表示されることを確認
 
-4. **�l�b�g���[�N�ڑ��̊m�F**
+4. **ネットワーク接続の確認**
 ```bash
-   ping 192.168.11.23  # �T�[�o�[��IP�A�h���X
+   ping 192.168.11.23  # サーバーのIPアドレス
    ```
 
-5. **�u���E�U�̃L���b�V�����N���A**
-   - Ctrl+Shift+Delete �ŃL���b�V���N���A
-   - �V�[�N���b�g���[�h�Ŏ���
+5. **ブラウザのキャッシュをクリア**
+   - Ctrl+Shift+Delete でキャッシュクリア
+   - シークレットモードで試す
 
-## �Z�L�����e�B
+## セキュリティ
 
-- **`appsettings.json` �� Git�ɃR�~�b�g���Ȃ�����**
-- `.gitignore.custom` �ɏ��O�ݒ�ς�
-- �p�X���[�h�͋��͂Ȃ��̂��g�p
-- �{�Ԋ��ł͊��ϐ���V�[�N���b�g�Ǘ��c�[���̎g�p�𐄏�
-- **LAN�O������̃A�N�Z�X�͐������܂���**�iVPN�����g�p���Ă��������j
+- **`appsettings.json` は Gitにコミットしないこと**
+- `.gitignore.custom` に除外設定済み
+- パスワードは強力なものを使用
+- 本番環境では環境変数やシークレット管理ツールの使用を推奨
+- **LAN外部からのアクセスは推奨しません**（VPN等を使用してください）
 
-## �l�b�g���[�N�\��
+## ネットワーク構成
 
-### �R���e�i����z�X�g��SQL Server�փA�N�Z�X
+### コンテナからホストのSQL Serverへアクセス
 
-Windows/Mac�̏ꍇ�A`host.docker.internal` ���g�p�F
+Windows/Macの場合、`host.docker.internal` を使用：
 
 ```json
 {
@@ -262,9 +262,9 @@ Windows/Mac�̏ꍇ�A`host.docker.internal` ���g�p�F
 }
 ```
 
-### �O��SQL Server�փA�N�Z�X
+### 外部SQL Serverへアクセス
 
-IP�A�h���X�܂��̓z�X�g�����w��F
+IPアドレスまたはホスト名を指定：
 
 ```json
 {
@@ -274,18 +274,18 @@ IP�A�h���X�܂��̓z�X�g�����w��F
 }
 ```
 
-## �`�[���J�����̒���
+## チーム開発時の注意
 
-1. **����Z�b�g�A�b�v**
+1. **初回セットアップ**
    ```bash
  cp appsettings.json.template appsettings.json
-   # appsettings.json ��ҏW
+   # appsettings.json を編集
    ```
 
-2. **appsettings.json �͊e�J���҂̃��[�J�����ɉ����Đݒ�**
-   - Git�ɂ͊܂܂�܂���
-   - �e���Őڑ�����ݒ肵�Ă�������
+2. **appsettings.json は各開発者のローカル環境に応じて設定**
+   - Gitには含まれません
+   - 各自で接続情報を設定してください
 
-3. **�ݒ�̋��L���K�v�ȏꍇ**
-   - `appsettings.json.template` ���X�V
-   - �e���v���[�g�̂�Git�ɃR�~�b�g
+3. **設定の共有が必要な場合**
+   - `appsettings.json.template` を更新
+   - テンプレートのみGitにコミット

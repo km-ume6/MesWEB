@@ -1,0 +1,321 @@
+@page "/terminology"
+@rendermode InteractiveServer
+
+@using System.IO
+@using Markdig
+
+<PageTitle>用語集 - MesWEB</PageTitle>
+
+<style>
+    .terminology-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .terminology-content {
+        line-height: 1.8;
+    }
+
+    .terminology-content h1 {
+        color: #0d6efd;
+        border-bottom: 3px solid #0d6efd;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .terminology-content h2 {
+        color: #0d6efd;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #0d6efd;
+        padding-left: 1rem;
+    }
+
+    .terminology-content h3 {
+        color: #495057;
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .terminology-content table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0;
+        background: white;
+    }
+
+    .terminology-content table th {
+        background-color: #0d6efd;
+        color: white;
+        padding: 0.75rem;
+        text-align: left;
+        font-weight: 600;
+    }
+
+    .terminology-content table td {
+        padding: 0.75rem;
+        border: 1px solid #dee2e6;
+    }
+
+    .terminology-content table tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+
+    .terminology-content code {
+        background-color: #f8f9fa;
+        padding: 0.2rem 0.4rem;
+        border-radius: 3px;
+        font-size: 0.9em;
+        color: #e83e8c;
+    }
+
+    .terminology-content pre {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 5px;
+        overflow-x: auto;
+    }
+
+    .terminology-content blockquote {
+        border-left: 4px solid #ffc107;
+        background-color: #fff3cd;
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+
+    .terminology-content ul, .terminology-content ol {
+        margin-left: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .terminology-content li {
+        margin-bottom: 0.5rem;
+    }
+
+    .terminology-toc {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+        border-left: 4px solid #0d6efd;
+    }
+
+    .terminology-toc h4 {
+        margin-top: 0;
+        color: #0d6efd;
+    }
+
+    .terminology-toc ul {
+        list-style: none;
+        padding-left: 0;
+    }
+
+    .terminology-toc li {
+        margin-bottom: 0.5rem;
+    }
+
+    .terminology-toc a {
+        color: #0d6efd;
+        text-decoration: none;
+    }
+
+    .terminology-toc a:hover {
+        text-decoration: underline;
+    }
+
+    .back-to-top {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        background-color: #0d6efd;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        font-size: 1.5rem;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        transition: all 0.3s ease;
+        display: none;
+    }
+
+    .back-to-top:hover {
+        background-color: #0b5ed7;
+        transform: translateY(-3px);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+    }
+
+    .back-to-top.show {
+        display: block;
+    }
+
+    .search-box {
+        margin-bottom: 2rem;
+        padding: 1rem;
+        background-color: #e7f3ff;
+        border-radius: 8px;
+    }
+
+    .search-box input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid #0d6efd;
+        border-radius: 5px;
+        font-size: 1rem;
+    }
+
+    .search-highlight {
+        background-color: yellow;
+        font-weight: bold;
+    }
+</style>
+
+<div class="terminology-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">
+            <i class="fas fa-book"></i> MesWEB 用語集
+        </h1>
+        <a href="/" class="btn btn-outline-primary">
+            <i class="fas fa-home"></i> ホームに戻る
+        </a>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">読み込み中...</span>
+            </div>
+            <p class="mt-3">用語集を読み込んでいます...</p>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>エラー:</strong> @errorMessage
+        </div>
+    }
+    else
+    {
+        <!-- 検索ボックス -->
+        <div class="search-box">
+            <input type="text" 
+                   @bind="searchText" 
+                   @bind:event="oninput"
+                   @bind:after="OnSearchTextChanged"
+                   class="form-control" 
+                   placeholder="?? 用語を検索...（例: ブック、テンプレート、マッピング）" />
+        </div>
+
+        @if (!string.IsNullOrEmpty(searchText) && searchText.Length >= 2)
+        {
+            <div class="alert alert-info">
+                <i class="fas fa-search"></i> 「<strong>@searchText</strong>」で検索中...
+            </div>
+        }
+
+        <!-- Markdownコンテンツ -->
+        <div class="terminology-content">
+            @((MarkupString)htmlContent)
+        </div>
+    }
+</div>
+
+<!-- トップに戻るボタン -->
+<button class="back-to-top" @onclick="ScrollToTop" id="backToTopBtn">
+    <i class="fas fa-arrow-up"></i>
+</button>
+
+@code {
+    private bool isLoading = true;
+    private string errorMessage = string.Empty;
+    private string htmlContent = string.Empty;
+    private string rawMarkdown = string.Empty;
+    private string searchText = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // TERMINOLOGY.mdファイルを読み込み
+            var filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "TERMINOLOGY.md");
+            
+            // ファイルが存在しない場合は、wwwroot配下を探す
+            if (!File.Exists(filePath))
+            {
+                filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wwwroot", "TERMINOLOGY.md");
+            }
+
+            if (File.Exists(filePath))
+            {
+                rawMarkdown = await File.ReadAllTextAsync(filePath);
+                htmlContent = ConvertMarkdownToHtml(rawMarkdown);
+            }
+            else
+            {
+                errorMessage = $"用語集ファイルが見つかりません。パス: {filePath}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"用語集の読み込みに失敗しました: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private string ConvertMarkdownToHtml(string markdown)
+    {
+        var pipeline = new Markdig.MarkdownPipelineBuilder()
+            .UseAdvancedExtensions()
+            .Build();
+
+        return Markdig.Markdown.ToHtml(markdown, pipeline);
+    }
+
+    private void OnSearchTextChanged()
+    {
+        if (string.IsNullOrEmpty(searchText) || searchText.Length < 2)
+        {
+            // 検索テキストが空または2文字未満の場合は元のコンテンツを表示
+            htmlContent = ConvertMarkdownToHtml(rawMarkdown);
+        }
+        else
+        {
+            // ハイライト付きのHTMLを生成
+            var highlightedMarkdown = HighlightSearchText(rawMarkdown, searchText);
+            htmlContent = ConvertMarkdownToHtml(highlightedMarkdown);
+        }
+
+        StateHasChanged();
+    }
+
+    private string HighlightSearchText(string markdown, string searchText)
+    {
+        if (string.IsNullOrEmpty(searchText))
+            return markdown;
+
+        // 大文字小文字を区別しない検索とハイライト
+        var regex = new System.Text.RegularExpressions.Regex(
+            System.Text.RegularExpressions.Regex.Escape(searchText), 
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase
+        );
+
+        return regex.Replace(markdown, match => $"**{match.Value}**");
+    }
+
+    private async Task ScrollToTop()
+    {
+        // JavaScriptを使用してスクロール
+        // 実装は必要に応じて追加
+        await Task.CompletedTask;
+    }
+}

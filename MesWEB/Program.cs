@@ -1,5 +1,4 @@
 using MesWEB.Components;
-using MesWEB.Shared.Data; // 修正: MesWEB.Data → MesWEB.Shared.Data
 using MesWEB.Shared.Services;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
@@ -7,7 +6,7 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // Register code pages encoding provider so ExcelDataReader can read legacy .xls encodings
-System.Text.Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
 // -----------------------------------------------------------------------------
 // Configuration strategy
@@ -57,8 +56,8 @@ Console.WriteLine($"Connection String: {connectionString}");
 Console.WriteLine($"ApplyMigrations: {applyMigrations}");
 Console.WriteLine($"==============================");
 
-// DbContextFactoryを追加（Blazor Serverの同時実行問題を解決）
-builder.Services.AddDbContextFactory<AppDbContext>(options =>
+// Register MesWEB.Shared.Data.AppDbContext
+builder.Services.AddDbContextFactory<MesWEB.Shared.Data.AppDbContext>(options =>
   options.UseSqlServer(connectionString, sqlOptions => sqlOptions.EnableRetryOnFailure())
 );
 
@@ -82,7 +81,7 @@ if (applyMigrations)
 {
     using (var scope = app.Services.CreateScope())
     {
-        var dbFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<AppDbContext>>();
+        var dbFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<MesWEB.Shared.Data.AppDbContext>>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
         try

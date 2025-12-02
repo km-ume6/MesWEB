@@ -2,25 +2,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MesWEB.Data
 {
-    public class AppDbContext : DbContext
+    // Type aliases for backward compatibility
+    using GrowthNoteItem = MesWEB.Shared.Data.GrowthNoteItem;
+    using PageAccessCounter = MesWEB.Shared.Data.PageAccessCounter;
+    using CellMappingLabel = MesWEB.Shared.Data.CellMappingLabel;
+    using CellMappingTemplate = MesWEB.Shared.Data.CellMappingTemplate;
+    using CellMappingItem = MesWEB.Shared.Data.CellMappingItem;
+
+    // MesWEB.Data.AppDbContext is now an alias for MesWEB.Shared.Data.AppDbContext
+    // This ensures backward compatibility while using the shared DbContext
+    public class AppDbContext : MesWEB.Shared.Data.AppDbContext
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-
-        public DbSet<GrowthNoteItem> GrowthNotes { get; set; } = null!;
-        public DbSet<PageAccessCounter> PageAccessCounters { get; set; } = null!;
-        public DbSet<CellMappingTemplate> CellMappingTemplates { get; set; } = null!;
-        public DbSet<CellMappingItem> CellMappingItems { get; set; } = null!;
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
-
-            // CellMappingTemplate��CellMappingItem�̃����[�V�����V�b�v
-            modelBuilder.Entity<CellMappingTemplate>()
-                .HasMany(t => t.MappingItems)
-                .WithOne(i => i.Template)
-                .HasForeignKey(i => i.TemplateId)
-                .OnDelete(DeleteBehavior.Cascade);
-        }
+        public AppDbContext(Microsoft.EntityFrameworkCore.DbContextOptions<MesWEB.Shared.Data.AppDbContext> options) : base(options) { }
     }
 }

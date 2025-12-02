@@ -1,14 +1,16 @@
 using System;
 using System.IO;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 
 namespace MesWEB.Shared.Data
 {
-    public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
+    // This helper intentionally does NOT implement IDesignTimeDbContextFactory to avoid
+    // conflicting design-time factories being discovered by the EF tools when multiple
+    // projects reference the same AppDbContext type.
+    internal static class SharedAppDbContextFactoryHelper
     {
-        public AppDbContext CreateDbContext(string[] args)
+        public static DbContextOptions<AppDbContext> CreateOptions()
         {
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
@@ -29,7 +31,7 @@ namespace MesWEB.Shared.Data
             var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
             optionsBuilder.UseSqlServer(conn, sqlOptions => sqlOptions.EnableRetryOnFailure());
 
-            return new AppDbContext(optionsBuilder.Options);
+            return optionsBuilder.Options;
         }
     }
 }
